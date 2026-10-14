@@ -9,34 +9,28 @@ export default function Manage({ cards, setCards, questions, setQuestions }) {
   const [qForm, setQForm] = useState(emptyQ)
   const [msg, setMsg] = useState('')
 
-  // حالات جديدة لتتبع العنصر الذي يتم تعديله
-  const [editCardId, setEditCardId] = useState(null)
-  const [editQId, setEditQId] = useState(null)
+  // حالات النوافذ المنبثقة (Modals)
+  const [editingCard, setEditingCard] = useState(null)
+  const [editingQ, setEditingQ] = useState(null)
 
-  // دالة الحفظ (تستخدم للإضافة والتعديل معاً)
-  const saveCard = (e) => {
+  // 1. إضافة بطاقة جديدة
+  const addCard = (e) => {
     e.preventDefault()
     if (!cardForm.q.trim() || !cardForm.a.trim()) return
-
-    if (editCardId) {
-      // إذا كنا في وضع التعديل، نحدث البطاقة المطلوبة فقط
-      setCards(cards.map(c => c.id === editCardId ? { ...c, q: cardForm.q.trim(), a: cardForm.a.trim() } : c))
-      setEditCardId(null)
-    } else {
-      // إضافة بطاقة جديدة
-      setCards([...cards, { id: uid(), q: cardForm.q.trim(), a: cardForm.a.trim() }])
-    }
+    setCards([...cards, { id: uid(), q: cardForm.q.trim(), a: cardForm.a.trim() }])
     setCardForm({ q: '', a: '' })
   }
 
-  // دالة نقل بيانات البطاقة إلى الفورم للتعديل
-  const editCard = (c) => {
-    setEditCardId(c.id)
-    setCardForm({ q: c.q, a: c.a })
+  // 2. تحديث بطاقة من النافذة المنبثقة
+  const updateCard = (e) => {
+    e.preventDefault()
+    if (!editingCard.q.trim() || !editingCard.a.trim()) return
+    setCards(cards.map(c => c.id === editingCard.id ? { ...editingCard, q: editingCard.q.trim(), a: editingCard.a.trim() } : c))
+    setEditingCard(null) // إغلاق النافذة
   }
 
-  // دالة حفظ السؤال (تستخدم للإضافة والتعديل معاً)
-  const saveQuestion = (e) => {
+  // 3. إضافة سؤال جديد
+  const addQuestion = (e) => {
     e.preventDefault()
     const filled = qForm.options
       .map((text, i) => ({ text: text.trim(), i }))
@@ -48,34 +42,46 @@ export default function Manage({ cards, setCards, questions, setQuestions }) {
       return
     }
     setMsg('')
-
-    if (editQId) {
-      // تعديل السؤال
-      setQuestions(questions.map(q => q.id === editQId ? { id: editQId, q: qForm.q.trim(), options: filled.map((o) => o.text), correct: correctPos } : q))
-      setEditQId(null)
-    } else {
-      // إضافة سؤال جديد
-      setQuestions([
-        ...questions,
-        { id: uid(), q: qForm.q.trim(), options: filled.map((o) => o.text), correct: correctPos }
-      ])
-    }
+    setQuestions([
+      ...questions,
+      { id: uid(), q: qForm.q.trim(), options: filled.map((o) => o.text), correct: correctPos }
+    ])
     setQForm(emptyQ)
   }
 
-  // دالة نقل بيانات السؤال إلى الفورم للتعديل
-  const editQuestion = (q) => {
-    setEditQId(q.id)
-    // نعيد تعبئة الخيارات الـ 4 حتى لو كان السؤال بخيارين فقط
-    const newOptions = ['', '', '', '']
-    q.options.forEach((opt, i) => { if (i < 4) newOptions[i] = opt })
-    setQForm({ q: q.q, options: newOptions, correct: q.correct })
+  // 4. تحديث سؤال من النافذة المنبثقة
+  const updateQuestion = (e) => {
+    e.preventDefault()
+    const filled = editingQ.options
+      .map((text, i) => ({ text: text.trim(), i }))
+      .filter((o) => o.text)
+    const correctPos = filled.findIndex((o) => o.i === editingQ.correct)
+    
+    if (!editingQ.q.trim() || filled.length < 2 || correctPos === -1) {
+      alert('اكتب السؤال وخيارين على الأقل، وتأكد إن الخيار الصحيح مكتوب.')
+      return
+    }
+    
+    setQuestions(questions.map(q => q.id === editingQ.id ? { id: editingQ.id, q: editingQ.q.trim(), options: filled.map(o => o.text), correct: correctPos } : q))
+    setEditingQ(null) // إغلاق النافذة
   }
 
   const setOption = (i, value) => {
     const options = [...qForm.options]
     options[i] = value
     setQForm({ ...qForm, options })
+  }
+
+  const setEditOption = (i, value) => {
+    const options = [...editingQ.options]
+    options[i] = value
+    setEditingQ({ ...editingQ, options })
+  }
+
+  const openEditQ = (q) => {
+    const newOptions = ['', '', '', '']
+    q.options.forEach((opt, i) => { if (i < 4) newOptions[i] = opt })
+    setEditingQ({ ...q, options: newOptions })
   }
 
   const exportData = () => {
@@ -115,31 +121,30 @@ export default function Manage({ cards, setCards, questions, setQuestions }) {
 
   return (
     <section className="manage">
-      <h2>{editCardId ? 'تعديل البطاقة' : 'إضافة بطاقة'}</h2>
-      <form onSubmit={saveCard}>
+      <h2>إضافة بطاقة</h2>
+      <form onSubmit={addCard}>
         <input placeholder="السؤال" value={cardForm.q} onChange={(e) => setCardForm({ ...cardForm, q: e.target.value })} />
         <textarea placeholder="الجواب" value={cardForm.a} onChange={(e) => setCardForm({ ...cardForm, a: e.target.value })} />
         <div className="row" style={{ justifyContent: 'flex-start' }}>
-          <button className="primary" type="submit">{editCardId ? 'حفظ التعديل' : 'إضافة'}</button>
-          {editCardId && (
-            <button type="button" onClick={() => { setEditCardId(null); setCardForm({ q: '', a: '' }) }}>إلغاء</button>
-          )}
+          <button className="primary" type="submit">إضافة</button>
         </div>
       </form>
+      
+      {/* تم إضافة الترقيم هنا (index + 1) */}
       <ul className="items">
-        {cards.map((c) => (
+        {cards.map((c, index) => (
           <li key={c.id}>
-            <span>{c.q}</span>
+            <span>{index + 1}. {c.q}</span>
             <div style={{ display: 'flex', gap: '8px' }}>
-              <button onClick={() => editCard(c)}>تعديل</button>
+              <button onClick={() => setEditingCard(c)}>تعديل</button>
               <button className="danger" onClick={() => setCards(cards.filter((x) => x.id !== c.id))}>حذف</button>
             </div>
           </li>
         ))}
       </ul>
 
-      <h2>{editQId ? 'تعديل السؤال' : 'إضافة سؤال اختيار من متعدد'}</h2>
-      <form onSubmit={saveQuestion}>
+      <h2>إضافة سؤال اختيار من متعدد</h2>
+      <form onSubmit={addQuestion}>
         <input placeholder="السؤال" value={qForm.q} onChange={(e) => setQForm({ ...qForm, q: e.target.value })} />
         {qForm.options.map((opt, i) => (
           <label key={i} className="opt-row">
@@ -149,18 +154,17 @@ export default function Manage({ cards, setCards, questions, setQuestions }) {
         ))}
         <p className="muted">حدد الدائرة بجانب الخيار الصحيح</p>
         <div className="row" style={{ justifyContent: 'flex-start' }}>
-          <button className="primary" type="submit">{editQId ? 'حفظ التعديل' : 'إضافة'}</button>
-          {editQId && (
-            <button type="button" onClick={() => { setEditQId(null); setQForm(emptyQ) }}>إلغاء</button>
-          )}
+          <button className="primary" type="submit">إضافة</button>
         </div>
       </form>
+
+      {/* تم إضافة الترقيم هنا للأسئلة أيضاً */}
       <ul className="items">
-        {questions.map((q) => (
+        {questions.map((q, index) => (
           <li key={q.id}>
-            <span>{q.q}</span>
+            <span>{index + 1}. {q.q}</span>
             <div style={{ display: 'flex', gap: '8px' }}>
-              <button onClick={() => editQuestion(q)}>تعديل</button>
+              <button onClick={() => openEditQ(q)}>تعديل</button>
               <button className="danger" onClick={() => setQuestions(questions.filter((x) => x.id !== q.id))}>حذف</button>
             </div>
           </li>
@@ -177,6 +181,47 @@ export default function Manage({ cards, setCards, questions, setQuestions }) {
         <button className="danger" onClick={resetAll}>إعادة ضبط</button>
       </div>
       {msg && <p className="muted">{msg}</p>}
+
+      {/* --- الشاشات المنبثقة (Modals) --- */}
+      
+      {/* نافذة تعديل البطاقة */}
+      {editingCard && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3>تعديل البطاقة</h3>
+            <form onSubmit={updateCard}>
+              <input placeholder="السؤال" value={editingCard.q} onChange={(e) => setEditingCard({ ...editingCard, q: e.target.value })} />
+              <textarea placeholder="الجواب" value={editingCard.a} onChange={(e) => setEditingCard({ ...editingCard, a: e.target.value })} />
+              <div className="modal-actions">
+                <button type="button" onClick={() => setEditingCard(null)}>إلغاء</button>
+                <button className="primary" type="submit">حفظ التعديل</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* نافذة تعديل السؤال */}
+      {editingQ && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3>تعديل السؤال</h3>
+            <form onSubmit={updateQuestion}>
+              <input placeholder="السؤال" value={editingQ.q} onChange={(e) => setEditingQ({ ...editingQ, q: e.target.value })} />
+              {editingQ.options.map((opt, i) => (
+                <label key={i} className="opt-row">
+                  <input type="radio" name="editCorrect" checked={editingQ.correct === i} onChange={() => setEditingQ({ ...editingQ, correct: i })} />
+                  <input placeholder={`الخيار ${i + 1}`} value={opt} onChange={(e) => setEditOption(i, e.target.value)} />
+                </label>
+              ))}
+              <div className="modal-actions">
+                <button type="button" onClick={() => setEditingQ(null)}>إلغاء</button>
+                <button className="primary" type="submit">حفظ التعديل</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </section>
   )
 }
