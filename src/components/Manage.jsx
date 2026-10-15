@@ -2,7 +2,75 @@ import { useState } from 'react'
 import { uid } from '../useStorage.js'
 
 const emptyQ = { q: '', options: ['', '', '', ''], correct: 0 }
-const MAX_FILE = 2.5 * 1024 * 1024 // base64 يكبّر الحجم ~33% وحد Vercel للطلب 4.5MB
+const MAX_RAW_FILE = 50 * 1024 * 1024 // 50MB
+
+const compressImage = (file, maxWidth = 1300, quality = 0.65) => {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => {
+      let { width, height } = img
+      if (width > maxWidth) {
+        height = Math.round((height * maxWidth) / width)
+        width = maxWidth
+      }
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(img, 0, 0, width, height)
+      const dataUrl = canvas.toDataURL('image/jpeg', quality)
+      resolve({
+        name: file.name,
+        mimeType: 'image/jpeg',
+        data: dataUrl.split(',')[1]
+      })
+    }
+    img.onerror = reject
+    img.src = URL.createObjectURL(file)
+  })
+}
+
+const processPdfFile = async (file, onProgress) => {
+  const arrayBuffer = await file.arrayBuffer()
+  const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise
+  let fullText = ''
+
+  for (let i = 1; i <= pdf.numPages; i++) {
+    onProgress(`جاري قراءة صفحة ${i} من ${pdf.numPages}...`)
+    const page = await pdf.getPage(i)
+    const content = await page.getTextContent()
+    const pageText = content.items.map((item) => item.str).join(' ')
+    if (pageText.trim()) {
+      fullText += `\n--- صفحة ${i} ---\n` + pageText
+    }
+  }
+
+  if (fullText.trim().length > 100) {
+    return { type: 'text', text: fullText.trim(), numPages: pdf.numPages }
+  }
+
+  // إذا كان الملف مصوّراً (Scanned PDF مثل كتب مكتبة نور) نحول أول 12 صفحة إلى صور مضغوطة
+  const maxPagesToRender = Math.min(pdf.numPages, 12)
+  const pageImages = []
+
+  for (let i = 1; i <= maxPagesToRender; i++) {
+    onProgress(`ملف مصوّر: جاري تجهيز الصفحة ${i} من ${maxPagesToRender}...`)
+    const page = await pdf.getPage(i)
+    const viewport = page.getViewport({ scale: 1.15 })
+    const canvas = document.createElement('canvas')
+    canvas.width = viewport.width
+    canvas.height = viewport.height
+    const ctx = canvas.getContext('2d')
+    await page.render({ canvasContext: ctx, viewport }).promise
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.6)
+    pageImages.push({
+      mimeType: 'image/jpeg',
+      data: dataUrl.split(',')[1]
+    })
+  }
+
+  return { type: 'images', images: pageImages, numPages: pdf.numPages, rendered: maxPagesToRender }
+}
 
 export default function Manage({ activeSub, cards, setCards, questions, setQuestions, currentCards, currentQs }) {
   const [cardForm, setCardForm] = useState({ q: '', a: '' })
@@ -12,11 +80,11 @@ export default function Manage({ activeSub, cards, setCards, questions, setQuest
   const [editingCard, setEditingCard] = useState(null)
   const [editingQ, setEditingQ] = useState(null)
 
-  // حالات الذكاء الاصطناعي
   const [aiText, setAiText] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
-  const [aiFile, setAiFile] = useState(null)   // { name, mimeType, data }
-  const [aiMode, setAiMode] = useState('both') // cards | quiz | both
+  const [fileStatus, setFileStatus] = useState('')
+  const [aiFiles, setAiFiles] = useState([])
+  const [aiMode, setAiMode] = useState('both')
 
   const addCard = (e) => {
     e.preventDefault()
@@ -70,72 +138,173 @@ export default function Manage({ activeSub, cards, setCards, questions, setQuest
     const newOptions = ['', '', '', '']; q.options.forEach((opt, i) => { if (i < 4) newOptions[i] = opt }); setEditingQ({ ...q, options: newOptions })
   }
 
-  // اختيار ملف
   const pickFile = async (e) => {
     const f = e.target.files?.[0]
     if (!f) return
-    if (f.size > MAX_FILE) { alert('الملف كبير. الحد الأقصى 2.5 ميغابايت.'); e.target.value = ''; return }
-
-    // ملفات نصية: نحطها بخانة النص مباشرة
-    if (f.type.startsWith('text/') || /\.(txt|md)$/i.test(f.name)) {
-      const content = await f.text()
-      setAiText(prev => (prev ? prev + '\n\n' : '') + content)
-      setAiFile(null)
+    if (f.size > MAX_RAW_FILE) {
+      alert('حجم الملف يتجاوز 50 ميغابايت.')
       e.target.value = ''
       return
     }
 
-    // PDF وصور: نرسلها لجوجل كـ base64
-    if (f.type === 'application/pdf' || f.type.startsWith('image/')) {
-      const reader = new FileReader()
-      reader.onload = () => setAiFile({ name: f.name, mimeType: f.type, data: String(reader.result).split(',')[1] })
-      reader.readAsDataURL(f)
-      return
-    }
+    setFileStatus('جاري معالجة الملف... ⏳')
 
-    alert('الصيغ المدعومة: PDF، صور، txt، md. (لملفات Word حوّليها لـ PDF أولاً)')
-    e.target.value = ''
-  }
-
-  // التوليد بالذكاء الاصطناعي
-  const generateWithAI = async (e) => {
-    e.preventDefault()
-    if (!aiText.trim() && !aiFile) { alert('أدخلي نصاً أو ارفعي ملفاً'); return }
-
-    setIsGenerating(true)
     try {
-      const res = await fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text: aiText,
-          mode: aiMode,
-          file: aiFile ? { mimeType: aiFile.mimeType, data: aiFile.data } : null
-        })
-      })
-
-      const raw = await res.text()
-      let data
-      try { data = JSON.parse(raw) } catch {
-        alert(`رد غير متوقع من الخادم (${res.status}). إذا كان الملف كبيراً جربي ملفاً أصغر.`)
+      if (f.type.startsWith('text/') || /\.(txt|md)$/i.test(f.name)) {
+        const content = await f.text()
+        setAiText(prev => (prev ? prev + '\n\n' : '') + content)
+        setAiFiles([])
+        setFileStatus(`✅ تم استخراج النص من ${f.name}`)
+        e.target.value = ''
         return
       }
 
-      if (!res.ok || data.error) { alert(data.error || 'حدث خطأ في التوليد'); return }
+      if (f.type === 'application/pdf' || /\.pdf$/i.test(f.name)) {
+        if (!window.pdfjsLib) {
+          alert('يرجى تحديث الصفحة (Ctrl + F5) لتفعيل قارئ ملفات الـ PDF.')
+          setFileStatus('')
+          return
+        }
+        const result = await processPdfFile(f, setFileStatus)
+        if (result.type === 'text') {
+          setAiText(prev => (prev ? prev + '\n\n' : '') + result.text)
+          setAiFiles([])
+          setFileStatus(`✅ تم استخراج النص من ${f.name} (${result.numPages} صفحة)`)
+        } else {
+          setAiFiles(result.images)
+          const note = result.numPages > result.rendered ? ` (أول ${result.rendered} صفحة)` : ` (${result.rendered} صفحة)`
+          setFileStatus(`📸 تم تجهيز الملف المصوّر: ${f.name}${note}`)
+        }
+        e.target.value = ''
+        return
+      }
 
-      const newCards = (data.cards || []).map(c => ({ id: uid(), subjectId: activeSub, q: c.q, a: c.a }))
-      const newQs = (data.questions || []).map(q => ({
-        id: uid(), subjectId: activeSub, q: q.q, options: q.options, correct: q.correct
-      }))
+      if (f.type.startsWith('image/')) {
+        const compressed = await compressImage(f)
+        setAiFiles([{ mimeType: compressed.mimeType, data: compressed.data }])
+        setFileStatus(`🖼️ تم ضغط وإرفاق الصورة: ${f.name}`)
+        e.target.value = ''
+        return
+      }
 
-      if (!newCards.length && !newQs.length) { alert('ما انولد شي، جربي محتوى أوضح.'); return }
+      alert('الصيغ المدعومة: PDF، صور، txt، md.')
+      setFileStatus('')
+    } catch (err) {
+      console.error(err)
+      alert('تعذّر قراءة الملف، تأكدي أنه غير تالف.')
+      setFileStatus('')
+    }
+    e.target.value = ''
+  }
 
-      setCards([...cards, ...newCards])
-      setQuestions([...questions, ...newQs])
-      setAiText(''); setAiFile(null)
-      alert(`تمت إضافة ${newCards.length} بطاقة و ${newQs.length} سؤال 🪄`)
-    } catch {
-      alert('فشل الاتصال بالخادم')
+  const generateWithAI = async (e) => {
+    e.preventDefault()
+    if (!aiText.trim() && aiFiles.length === 0) {
+      alert('أدخلي نصاً أو ارفعي ملفاً أولاً')
+      return
+    }
+
+    setIsGenerating(true)
+    try {
+      let allNewCards = []
+      let allNewQs = []
+
+      // إرسال كل صفحتين مصوّرتين في دفعة مستقلة لضمان عدم حدوث خطأ 500 في Vercel
+      if (aiFiles.length > 0) {
+        const BATCH_SIZE = 2
+        const totalBatches = Math.ceil(aiFiles.length / BATCH_SIZE)
+
+        for (let b = 0; b < totalBatches; b++) {
+          setFileStatus(`جاري التوليد بالذكاء الاصطناعي (الجزء ${b + 1} من ${totalBatches})... ⏳`)
+          const batchFiles = aiFiles.slice(b * BATCH_SIZE, (b + 1) * BATCH_SIZE)
+
+          const res = await fetch('/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              text: b === 0 ? aiText : '',
+              mode: aiMode,
+              files: batchFiles
+            })
+          })
+
+          const raw = await res.text()
+          let data
+          try {
+            data = JSON.parse(raw)
+          } catch {
+            throw new Error(`خطأ من الخادم (${res.status}): تأكدي من رفع التحديث الجديد لملف api/generate.js على Vercel.`)
+          }
+
+          if (!res.ok || data.error) {
+            throw new Error(data.error || 'حدث خطأ أثناء التوليد')
+          }
+
+          const batchCards = (data.cards || []).map(c => ({ id: uid(), subjectId: activeSub, q: c.q, a: c.a }))
+          const batchQs = (data.questions || []).map(q => ({
+            id: uid(), subjectId: activeSub, q: q.q, options: q.options, correct: q.correct
+          }))
+
+          allNewCards.push(...batchCards)
+          allNewQs.push(...batchQs)
+        }
+      } else {
+        const CHUNK_SIZE = 30000
+        const cleanText = aiText.trim()
+        const textChunks = []
+        for (let i = 0; i < cleanText.length; i += CHUNK_SIZE) {
+          textChunks.push(cleanText.slice(i, i + CHUNK_SIZE))
+        }
+
+        for (let idx = 0; idx < textChunks.length; idx++) {
+          if (textChunks.length > 1) {
+            setFileStatus(`جاري توليد الأسئلة (الجزء ${idx + 1} من ${textChunks.length})... ⏳`)
+          }
+
+          const res = await fetch('/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              text: textChunks[idx],
+              mode: aiMode
+            })
+          })
+
+          const raw = await res.text()
+          let data
+          try {
+            data = JSON.parse(raw)
+          } catch {
+            throw new Error(`خطأ من الخادم (${res.status}): تأكدي من رفع التحديث الجديد لملف api/generate.js على Vercel.`)
+          }
+
+          if (!res.ok || data.error) {
+            throw new Error(data.error || 'حدث خطأ في التوليد')
+          }
+
+          const batchCards = (data.cards || []).map(c => ({ id: uid(), subjectId: activeSub, q: c.q, a: c.a }))
+          const batchQs = (data.questions || []).map(q => ({
+            id: uid(), subjectId: activeSub, q: q.q, options: q.options, correct: q.correct
+          }))
+
+          allNewCards.push(...batchCards)
+          allNewQs.push(...batchQs)
+        }
+      }
+
+      if (!allNewCards.length && !allNewQs.length) {
+        alert('لم يتم استخراج أسئلة، جربي محتوى أوضح.')
+        return
+      }
+
+      setCards([...cards, ...allNewCards])
+      setQuestions([...questions, ...allNewQs])
+      setAiText('')
+      setAiFiles([])
+      setFileStatus('')
+      alert(`تمت إضافة ${allNewCards.length} بطاقة و ${allNewQs.length} سؤال بنجاح 🪄`)
+    } catch (err) {
+      alert(err.message || 'فشل الاتصال بالخادم')
     } finally {
       setIsGenerating(false)
     }
@@ -143,19 +312,17 @@ export default function Manage({ activeSub, cards, setCards, questions, setQuest
 
   return (
     <section className="manage">
-
-      {/* واجهة الذكاء الاصطناعي */}
       <div style={{ background: '#f0fdf4', padding: '16px', borderRadius: '12px', border: '1px solid #bbf7d0', marginBottom: '24px' }}>
         <h2 style={{ margin: '0 0 12px 0', color: '#166534' }}>✨ توليد بطاقات وأسئلة بالذكاء الاصطناعي</h2>
         <form onSubmit={generateWithAI}>
           <textarea
-            placeholder="الصقي النص هنا، أو ارفعي ملفاً..."
+            placeholder="الصقي النص هنا، أو ارفعي ملفاً كبيراً (PDF، صور، TXT)..."
             value={aiText}
             onChange={(e) => setAiText(e.target.value)}
             style={{ minHeight: '100px', borderColor: '#86efac' }}
           />
           <input type="file" accept=".pdf,.txt,.md,image/*" onChange={pickFile} />
-          {aiFile && <p className="muted">📎 {aiFile.name}</p>}
+          {fileStatus && <p className="muted" style={{ color: '#166534', fontWeight: 'bold' }}>{fileStatus}</p>}
 
           <select
             value={aiMode}
@@ -221,7 +388,6 @@ export default function Manage({ activeSub, cards, setCards, questions, setQuest
       </ul>
       {msg && <p className="muted">{msg}</p>}
 
-      {/* الشاشات المنبثقة للتعديل */}
       {editingCard && (
         <div className="modal-overlay">
           <div className="modal-content">
