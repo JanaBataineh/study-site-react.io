@@ -17,7 +17,7 @@ export default function App() {
   const [tab, setTab] = useState('cards')
 
   const addSubject = () => {
-    const name = window.prompt('أدخلي اسم المادة الجديدة في مدرسة إلمور (مثلاً: رياضيات، علوم، لغة عربية):')
+    const name = window.prompt('أدخلي اسم المادة الجديدة في مدرسة إلمور (مثلاً: رياضيات، علوم، إنجليزي):')
     if (name && name.trim()) {
       setSubjects([...subjects, { id: uid(), name: name.trim() }])
     }
@@ -40,31 +40,28 @@ export default function App() {
     }
   }
 
-  // شاشة البداية 3D مع فيديو شارة البداية الحقيقي من يوتيوب
+  // شاشة البداية: فيديو يوتيوب يملأ الشاشة بالكامل تلقائياً مع زر دخول
   if (showIntro) {
     return (
       <div className="gumball-intro">
-        <h1 style={{ color: '#ffb703', fontSize: '32px', margin: '0 0 10px 0', textShadow: '3px 3px 0 #1f2430' }}>
-          🎬 عالم غامبول المدهش - شارة البداية
-        </h1>
-        
-        <div className="intro-video-container">
-          {/* رابط يوتيوب مع autoplay لتبدأ الشارة فوراً */}
-          <iframe 
-            src="https://www.youtube.com/embed/dD9tp9mn5Xg?autoplay=1&mute=0&controls=1" 
-            title="Gumball Intro"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
-        </div>
+        {/* فيديو يوتيوب شارة البداية مع تشغيل تلقائي وميل لملء الشاشة بالكامل */}
+        <iframe 
+          className="fullscreen-video"
+          src="https://www.youtube.com/embed/dD9tp9mn5Xg?autoplay=1&mute=0&controls=0&disablekb=1&modestbranding=1&loop=1" 
+          title="Gumball Intro Fullscreen"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        />
 
-        <div className="intro-buttons">
+        <div className="intro-overlay-content">
+          <h2 style={{ color: '#fff', margin: 0, fontSize: '22px', textShadow: '2px 2px 0 #000' }}>
+            ✨ عالم غامبول المدهش - جاري تشغيل شارة البداية...
+          </h2>
           <button 
             className="primary" 
             onClick={() => setShowIntro(false)}
-            style={{ fontSize: '20px', padding: '14px 32px', background: '#80ed99', color: '#1f2430' }}
+            style={{ fontSize: '20px', padding: '12px 34px', background: '#80ed99', color: '#1f2430' }}
           >
-            🚀 دخول عالم الدراسة 3D
+            🚀 تخطي ودخول الموقع
           </button>
         </div>
       </div>
