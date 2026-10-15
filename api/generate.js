@@ -9,8 +9,7 @@ export default async function handler(req, res) {
   if (!apiKey) return res.status(500).json({ error: 'مفتاح API مفقود من إعدادات Vercel' })
 
   // استخدام النموذج الجديد المعتمد من جوجل gemini-2.5-flash
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`
-
+const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`
   const prompt = `
   أنت معلم خبير. استخرج بطاقات دراسية (سؤال وجواب) من النص التالي.
   مهم جداً: يجب أن يكون الرد بصيغة JSON فقط بهذا الشكل بالضبط بدون أي نصوص أخرى:
