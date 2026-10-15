@@ -1,72 +1,188 @@
 * { box-sizing: border-box; }
-body { margin: 0; font-family: system-ui, "Segoe UI", Tahoma, sans-serif; background: #f4f5f7; color: #1f2430; }
-.container { max-width: 600px; margin: 0 auto; padding: 24px 16px; text-align: center; }
-.muted { color: #6b7280; font-size: 14px; }
-button, .file-btn { font: inherit; cursor: pointer; border: 1px solid #d1d5db; background: #fff; padding: 10px 18px; border-radius: 10px; color: inherit; }
-button:hover, .file-btn:hover { background: #eef0f4; }
-.tabs, .row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 16px 0; }
-.tabs button.active, .primary { background: #4f46e5; color: #fff; border-color: #4f46e5; }
-.primary:hover { background: #4338ca; }
+body {
+  margin: 0;
+  font-family: 'Cairo', system-ui, "Segoe UI", Tahoma, sans-serif;
+  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+  background-attachment: fixed;
+  color: #1f2430;
+  min-height: 100vh;
+}
+
+.container { max-width: 650px; margin: 0 auto; padding: 24px 16px; text-align: center; }
+.muted { color: #4b5563; font-size: 14px; font-weight: 700; }
+
+/* أزرار كرتونية على طريقة غامبول */
+button, .file-btn {
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+  border: 3px solid #1f2430;
+  background: #fff;
+  padding: 10px 18px;
+  border-radius: 16px;
+  color: #1f2430;
+  box-shadow: 0 4px 0 #1f2430;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+button:hover, .file-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 #1f2430;
+  background: #fdfcdc;
+}
+button:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #1f2430;
+}
+
+.tabs, .row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 16px 0; }
+.tabs button.active, .primary {
+  background: #00b4d8; /* لون غامبول الأزرق */
+  color: #fff;
+  border-color: #1f2430;
+}
+.primary:hover { background: #0096c7; }
 .primary { margin-top: 12px; }
-.danger { color: #dc2626; border-color: #fca5a5; padding: 6px 12px; }
-.card-scene { perspective: 1000px; height: 220px; margin: 16px 0 8px; cursor: pointer; }
+.danger { background: #ffccd5; color: #d90429; border-color: #1f2430; padding: 6px 12px; }
+
+/* بطاقات الدراسة بألوان غامبول وداروين */
+.card-scene { perspective: 1000px; height: 240px; margin: 16px 0 12px; cursor: pointer; }
 .card { position: relative; width: 100%; height: 100%; transition: transform .6s; transform-style: preserve-3d; }
 .card.flipped { transform: rotateY(180deg); }
-.face { position: absolute; inset: 0; backface-visibility: hidden; display: flex; align-items: center; justify-content: center;
-  padding: 20px; border-radius: 16px; background: #fff; box-shadow: 0 4px 14px rgba(0,0,0,.1); font-size: 20px; }
-.back { transform: rotateY(180deg); background: #4f46e5; color: #fff; }
-.option { display: block; width: 100%; margin: 8px 0; text-align: start; }
-.option.correct { background: #dcfce7; border-color: #16a34a; }
-.option.wrong { background: #fee2e2; border-color: #dc2626; }
+.face {
+  position: absolute; inset: 0; backface-visibility: hidden;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px; border-radius: 24px;
+  background: #fff;
+  border: 4px solid #1f2430;
+  box-shadow: 0 8px 0 #1f2430;
+  font-size: 22px; font-weight: 900;
+}
+.back {
+  transform: rotateY(180deg);
+  background: #f77f00; /* لون داروين البرتقالي */
+  color: #fff;
+}
+
+/* خيارات الاختبار */
+.option { display: block; width: 100%; margin: 10px 0; text-align: start; font-size: 17px; }
+.option.correct { background: #80ed99 !important; color: #000; border-color: #1f2430; }
+.option.wrong { background: #ff758f !important; color: #fff; border-color: #1f2430; }
+
+/* إدارة المحتوى */
 .manage { text-align: start; }
 .manage h2 { margin-top: 28px; }
-form { display: flex; flex-direction: column; gap: 8px; }
-input:not([type=radio]), textarea { font: inherit; padding: 10px; border: 1px solid #d1d5db; border-radius: 10px; width: 100%; }
-textarea { min-height: 70px; resize: vertical; }
+form { display: flex; flex-direction: column; gap: 10px; }
+input:not([type=radio]), textarea, select {
+  font: inherit; padding: 12px;
+  border: 3px solid #1f2430; border-radius: 14px;
+  width: 100%; box-shadow: 0 3px 0 #1f2430;
+}
+textarea { min-height: 75px; resize: vertical; }
 .opt-row { display: flex; gap: 8px; align-items: center; }
 .items { list-style: none; padding: 0; margin: 12px 0; }
-.items li { display: flex; justify-content: space-between; align-items: center; gap: 8px; background: #fff; padding: 8px 12px; border-radius: 10px; margin-bottom: 6px; }
-/* نوافذ التعديل المنبثقة (Modals) */
+.items li {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  background: #fff; padding: 10px 14px; border-radius: 14px; margin-bottom: 8px;
+  border: 3px solid #1f2430; box-shadow: 0 4px 0 #1f2430; font-weight: 700;
+}
+
+/* نوافذ التعديل المنبثقة */
 .modal-overlay {
-  position: fixed; inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  position: fixed; inset: 0; background: rgba(0, 0, 0, 0.65);
   display: flex; align-items: center; justify-content: center;
   z-index: 1000; padding: 16px;
 }
 .modal-content {
   background: #fff; width: 100%; max-width: 500px;
-  padding: 24px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  padding: 24px; border-radius: 24px;
+  border: 4px solid #1f2430; box-shadow: 0 10px 0 #1f2430;
   max-height: 90vh; overflow-y: auto; text-align: start;
 }
-.modal-content h3 { margin-top: 0; margin-bottom: 16px; }
 .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
-/* تصميم الشاشة الرئيسية (بوكسات المواد) */
+
+/* بوكسات المواد الدراسية */
 .subjects-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 16px; margin: 24px 0;
+  grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+  gap: 18px; margin: 24px 0;
 }
 .subject-box {
-  background: #fff; border: 2px solid #e0e7ff; border-radius: 16px;
+  background: #fff; border: 4px solid #1f2430; border-radius: 22px;
   padding: 24px 16px; cursor: pointer; transition: all 0.2s;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  min-height: 140px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); position: relative;
+  min-height: 155px; box-shadow: 0 7px 0 #1f2430; position: relative;
 }
 .subject-box:hover {
-  transform: translateY(-5px); box-shadow: 0 10px 15px rgba(0,0,0,0.1); border-color: #4f46e5;
+  transform: translateY(-5px) rotate(-1deg);
+  box-shadow: 0 12px 0 #1f2430;
+  background: #e0fbfc;
 }
-.subject-title { font-size: 18px; font-weight: bold; color: #1f2430; margin-bottom: 8px; text-align: center; }
-.add-subject-box { border: 2px dashed #a5b4fc; background: #f8fafc; color: #4f46e5; }
-.add-subject-box:hover { background: #eef2ff; }
-/* أزرار البوكسات (تعديل وحذف) */
-.box-actions {
-  position: absolute; bottom: 12px; display: flex; gap: 8px;
+.subject-title { font-size: 20px; font-weight: 900; color: #1f2430; margin-bottom: 8px; text-align: center; }
+.add-subject-box { border: 4px dashed #1f2430; background: #ffd166; color: #1f2430; }
+.add-subject-box:hover { background: #ffbe0b; }
+
+.box-actions { position: absolute; bottom: 12px; display: flex; gap: 8px; }
+.action-btn { font-size: 12px; padding: 4px 10px; border-radius: 10px; border: 2px solid #1f2430; box-shadow: 0 2px 0 #1f2430; }
+.edit-btn { background: #caf0f8; }
+.del-btn { background: #ffccd5; color: #d90429; }
+
+/* ====== شاشة بداية المسلسل (Gumball Intro Screen) ====== */
+.gumball-intro {
+  position: fixed; inset: 0; z-index: 9999;
+  background: radial-gradient(circle, #fff 10%, #48cae4 55%, #0077b6 100%);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 20px; text-align: center; overflow: hidden;
 }
-.action-btn {
-  font-size: 12px; padding: 4px 12px; background: #fff; border-radius: 6px; 
-  cursor: pointer; transition: all 0.2s; border: 1px solid;
+.rainbow-bg {
+  position: absolute; inset: -50%;
+  background: conic-gradient(#ffbe0b, #fb5607, #ff006e, #8338ec, #3a86ff, #80ed99, #ffbe0b);
+  opacity: 0.22; animation: spin 18s linear infinite; z-index: -1;
 }
-.edit-btn { border-color: #d1d5db; color: #4b5563; }
-.edit-btn:hover { background: #f3f4f6; }
-.del-btn { border-color: #fca5a5; color: #dc2626; }
-.del-btn:hover { background: #fee2e2; }
+@keyframes spin { 100% { transform: rotate(360deg); } }
+
+.logo-badge {
+  background: #fff; border: 6px solid #1f2430; border-radius: 36px;
+  padding: 28px 36px; max-width: 520px; width: 100%;
+  box-shadow: 0 14px 0 #1f2430, 0 25px 40px rgba(0,0,0,0.25);
+  animation: popIn 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes popIn {
+  0% { transform: scale(0.3) rotate(-10deg); opacity: 0; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+.logo-sub {
+  display: inline-block; background: #ff006e; color: #fff;
+  padding: 4px 16px; border-radius: 99px; border: 3px solid #1f2430;
+  font-size: 18px; font-weight: 900; transform: rotate(-3deg);
+}
+.logo-main {
+  font-size: 52px; font-weight: 900; margin: 8px 0;
+  color: #00b4d8;
+  text-shadow: 3px 3px 0 #1f2430, -2px -2px 0 #1f2430, 3px -2px 0 #1f2430, -2px 3px 0 #1f2430;
+  line-height: 1.1;
+}
+.logo-amazing {
+  display: inline-block; background: #ffbe0b; color: #1f2430;
+  padding: 4px 20px; border-radius: 14px; border: 4px solid #1f2430;
+  font-size: 26px; font-weight: 900; transform: rotate(2deg);
+  box-shadow: 0 4px 0 #1f2430;
+}
+
+/* فقاعات كلام غامبول وداروين في الاختبار */
+.character-feedback {
+  display: flex; align-items: center; gap: 14px;
+  margin: 18px 0; padding: 16px; border-radius: 22px;
+  border: 4px solid #1f2430; box-shadow: 0 6px 0 #1f2430;
+  animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  text-align: start;
+}
+.character-feedback.gumball { background: #caf0f8; }
+.character-feedback.darwin { background: #ffe5d9; }
+.char-avatar {
+  width: 78px; height: 78px; flex-shrink: 0;
+  border-radius: 50%; border: 3px solid #1f2430;
+  background: #fff; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 0 #1f2430; overflow: hidden;
+}
+.char-name { font-weight: 900; font-size: 16px; margin-bottom: 4px; }
+.char-quote { font-size: 18px; font-weight: 900; line-height: 1.4; }
