@@ -4,6 +4,7 @@ import { defaultCards, defaultQuestions, defaultSubjects } from './defaults.js'
 import Flashcards from './components/Flashcards.jsx'
 import Quiz from './components/Quiz.jsx'
 import Manage from './components/Manage.jsx'
+import Intro from './components/Intro.jsx'
 
 const TABS = [['cards', '🃏 البطاقات'], ['quiz', '🎮 تحدي غامبول'], ['manage', '🛠️ إدارة المحتوى']]
 
@@ -40,32 +41,9 @@ export default function App() {
     }
   }
 
-  // شاشة البداية: فيديو يوتيوب يملأ الشاشة بالكامل تلقائياً مع زر دخول
+  // شاشة البداية التفاعلية (شخصيات متحركة + موسيقى)
   if (showIntro) {
-    return (
-      <div className="gumball-intro">
-        {/* فيديو يوتيوب شارة البداية مع تشغيل تلقائي وميل لملء الشاشة بالكامل */}
-        <iframe 
-          className="fullscreen-video"
-          src="https://www.youtube.com/embed/dD9tp9mn5Xg?autoplay=1&mute=0&controls=0&disablekb=1&modestbranding=1&loop=1" 
-          title="Gumball Intro Fullscreen"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        />
-
-        <div className="intro-overlay-content">
-          <h2 style={{ color: '#fff', margin: 0, fontSize: '22px', textShadow: '2px 2px 0 #000' }}>
-            ✨ عالم غامبول المدهش - جاري تشغيل شارة البداية...
-          </h2>
-          <button 
-            className="primary" 
-            onClick={() => setShowIntro(false)}
-            style={{ fontSize: '20px', padding: '12px 34px', background: '#80ed99', color: '#1f2430' }}
-          >
-            🚀 تخطي ودخول الموقع
-          </button>
-        </div>
-      </div>
-    )
+    return <Intro onEnter={() => setShowIntro(false)} />
   }
 
   if (activeSub) {

@@ -155,3 +155,95 @@ textarea { min-height: 80px; resize: vertical; }
 }
 .char-name { font-weight: 900; font-size: 17px; margin-bottom: 4px; }
 .char-quote { font-size: 19px; font-weight: 900; line-height: 1.4; }
+/* ====== شاشة البداية التفاعلية ====== */
+.intro-screen {
+  position: fixed; inset: 0; z-index: 99999; overflow: hidden;
+  background: radial-gradient(ellipse at center, #1a0b2e 0%, #05010d 70%, #000 100%);
+  display: flex; align-items: center; justify-content: center;
+}
+.intro-stars { position: absolute; inset: 0; }
+.intro-star {
+  position: absolute; border-radius: 50%; background: #fff;
+  box-shadow: 0 0 8px 2px rgba(255,255,255,.8);
+  animation: twinkle 2s ease-in-out infinite;
+}
+@keyframes twinkle { 0%,100% { opacity: .15; transform: scale(.7); } 50% { opacity: 1; transform: scale(1.3); } }
+
+.intro-logo {
+  position: relative; width: min(80vw, 560px); aspect-ratio: 1 / 0.95;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+  transition: transform .9s cubic-bezier(.175,.885,.32,1.4), opacity .6s;
+}
+.intro-screen:not(.playing) .intro-logo { transform: scale(.85); opacity: .85; }
+.intro-screen.playing .intro-logo { transform: scale(1); opacity: 1; }
+
+.intro-rainbow { position: absolute; top: 0; left: 6%; right: 6%; height: 62%; }
+.intro-rainbow .arc {
+  position: absolute; border-radius: 999px 999px 0 0; transform-origin: bottom center;
+  filter: blur(1px); animation: arcIn .8s ease-out both, arcPulse 3s ease-in-out infinite;
+}
+.intro-rainbow .arc-hole {
+  position: absolute; inset: 80px 80px 0 80px; border-radius: 999px 999px 0 0; background: #05010d;
+}
+@keyframes arcIn { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes arcPulse { 0%,100% { filter: blur(1px) brightness(1); } 50% { filter: blur(2px) brightness(1.35); } }
+
+.intro-word-top, .intro-word-bottom {
+  position: relative; z-index: 2; color: #fff; font-weight: 900;
+  font-size: clamp(34px, 8vw, 64px); text-shadow: 0 4px 0 #000, 0 0 18px rgba(255,255,255,.6);
+}
+.intro-word-top { margin-bottom: -4px; }
+.intro-word-main {
+  position: relative; z-index: 2; display: flex; direction: ltr; gap: 2px;
+  font-family: 'Cairo', sans-serif; font-weight: 900;
+  font-size: clamp(48px, 13vw, 104px); line-height: 1;
+}
+.intro-word-main span {
+  display: inline-block; -webkit-text-stroke: 3px #0a0a0a; text-shadow: 0 6px 0 rgba(0,0,0,.5);
+  animation: bounceLetter 1.4s ease-in-out infinite;
+}
+@keyframes bounceLetter { 0%,100% { transform: translateY(0) rotate(0); } 30% { transform: translateY(-16px) rotate(-4deg); } 60% { transform: translateY(3px) rotate(3deg); } }
+
+.intro-char {
+  position: absolute; bottom: 14%; width: clamp(110px, 22vw, 230px); aspect-ratio: 1;
+  cursor: pointer; z-index: 5; user-select: none;
+  animation: floaty 2.6s ease-in-out infinite;
+}
+.intro-char img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 10px 14px rgba(0,0,0,.6)); pointer-events: none; }
+.char-left { left: 6%; }
+.char-right { right: 6%; animation-delay: -1.3s; }
+.intro-screen.playing .char-left { animation: dance 0.9s ease-in-out infinite; }
+.intro-screen.playing .char-right { animation: dance 0.9s ease-in-out infinite reverse; }
+.intro-char.poked { animation: pokeJump .7s cubic-bezier(.3,1.6,.5,1) !important; }
+@keyframes floaty { 0%,100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-14px) rotate(2deg); } }
+@keyframes dance { 0%,100% { transform: translateY(0) rotate(-6deg) scale(1); } 25% { transform: translateY(-22px) rotate(0) scale(1.06, .96); } 50% { transform: translateY(0) rotate(6deg) scale(.96, 1.06); } 75% { transform: translateY(-12px) rotate(0) scale(1.03); } }
+@keyframes pokeJump { 0% { transform: scale(1); } 30% { transform: translateY(-70px) rotate(360deg) scale(1.25); } 60% { transform: translateY(0) rotate(360deg) scale(.85, 1.15); } 100% { transform: scale(1); } }
+
+.intro-char-fallback {
+  width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-size: clamp(60px, 12vw, 110px); color: #fff;
+}
+.intro-char-fallback small { font-size: 12px; font-weight: 700; opacity: .8; text-align: center; }
+
+.intro-controls {
+  position: absolute; bottom: 4%; left: 0; right: 0; z-index: 10;
+  display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;
+}
+.intro-btn { font-size: 22px; padding: 14px 40px; animation: pulseBtn 1.3s ease-in-out infinite; }
+@keyframes pulseBtn { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+
+/* ====== المجسم ثلاثي الأبعاد (Sketchfab) ====== */
+.intro-screen { flex-direction: column; justify-content: flex-start; }
+.intro-screen .intro-logo { width: min(62vw, 440px); margin-top: 3vh; }
+.intro-3d {
+  position: absolute; left: 50%; bottom: 13%; transform: translateX(-50%);
+  width: min(94vw, 560px); height: 40vh; z-index: 5;
+}
+.intro-3d iframe { width: 100%; height: 100%; border: 0; background: transparent; }
+.intro-screen.playing .intro-3d { animation: dance3d 1s ease-in-out infinite; }
+@keyframes dance3d { 0%,100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-10px); } }
+.intro-3d-credit {
+  position: absolute; bottom: -22px; left: 0; right: 0; margin: 0; text-align: center;
+  font-size: 11px; color: #cfcfe6; direction: ltr;
+}
+.intro-3d-credit a { color: #6fd3ff; font-weight: 700; text-decoration: none; }
