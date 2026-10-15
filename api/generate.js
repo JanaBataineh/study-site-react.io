@@ -4,11 +4,12 @@ export default async function handler(req, res) {
   const { text } = req.body
   if (!text) return res.status(400).json({ error: 'النص مطلوب' })
 
-  const apiKey = process.env.GEMINI_API_KEY
+  // إزالة أي مسافات مخفية من المفتاح تلقائياً
+  const apiKey = process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.trim() : ''
   if (!apiKey) return res.status(500).json({ error: 'مفتاح API مفقود من إعدادات Vercel' })
 
-  // التغيير هنا: استخدمنا gemini-1.5-flash-latest بدلاً من القديم
-const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`
+
   const prompt = `
   أنت معلم خبير. اقرأ النص التالي واستخرج منه بطاقات دراسية (سؤال وجواب) تلخص أهم النقاط.
   يجب أن يكون الرد بصيغة JSON فقط، عبارة عن مصفوفة (Array) تحتوي على كائنات، كل كائن فيه "q" للسؤال و "a" للجواب.
