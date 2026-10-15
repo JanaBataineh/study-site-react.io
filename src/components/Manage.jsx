@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { uid } from '../useStorage.js'
 
 const emptyQ = { q: '', options: ['', '', '', ''], correct: 0 }
+const MAX_FILE = 2.5 * 1024 * 1024 // base64 يكبّر الحجم ~33% وحد Vercel للطلب 4.5MB
 
 export default function Manage({ activeSub, cards, setCards, questions, setQuestions, currentCards, currentQs }) {
   const [cardForm, setCardForm] = useState({ q: '', a: '' })
@@ -11,9 +12,11 @@ export default function Manage({ activeSub, cards, setCards, questions, setQuest
   const [editingCard, setEditingCard] = useState(null)
   const [editingQ, setEditingQ] = useState(null)
 
-  // ✅ الحالات الخاصة بالذكاء الاصطناعي (تم وضعها هنا داخل الدالة بشكل صحيح)
+  // حالات الذكاء الاصطناعي
   const [aiText, setAiText] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
+  const [aiFile, setAiFile] = useState(null)   // { name, mimeType, data }
+  const [aiMode, setAiMode] = useState('both') // cards | quiz | both
 
   const addCard = (e) => {
     e.preventDefault()
@@ -33,7 +36,7 @@ export default function Manage({ activeSub, cards, setCards, questions, setQuest
     e.preventDefault()
     const filled = qForm.options.map((text, i) => ({ text: text.trim(), i })).filter((o) => o.text)
     const correctPos = filled.findIndex((o) => o.i === qForm.correct)
-    
+
     if (!qForm.q.trim() || filled.length < 2 || correctPos === -1) {
       setMsg('اكتب السؤال وخيارين على الأقل، وتأكد إن الخيار الصحيح مكتوب.')
       return
@@ -47,12 +50,12 @@ export default function Manage({ activeSub, cards, setCards, questions, setQuest
     e.preventDefault()
     const filled = editingQ.options.map((text, i) => ({ text: text.trim(), i })).filter((o) => o.text)
     const correctPos = filled.findIndex((o) => o.i === editingQ.correct)
-    
+
     if (!editingQ.q.trim() || filled.length < 2 || correctPos === -1) {
       alert('اكتب السؤال وخيارين على الأقل، وتأكد إن الخيار الصحيح مكتوب.')
       return
     }
-    
+
     setQuestions(questions.map(q => q.id === editingQ.id ? { id: editingQ.id, subjectId: activeSub, q: editingQ.q.trim(), options: filled.map(o => o.text), correct: correctPos } : q))
     setEditingQ(null)
   }
@@ -67,32 +70,71 @@ export default function Manage({ activeSub, cards, setCards, questions, setQuest
     const newOptions = ['', '', '', '']; q.options.forEach((opt, i) => { if (i < 4) newOptions[i] = opt }); setEditingQ({ ...q, options: newOptions })
   }
 
-  // ✅ دالة الذكاء الاصطناعي
-  const generateWithAI = async (e) => {
-    e.preventDefault()
-    if (!aiText.trim() || !activeSub) {
-      alert('الرجاء اختيار الموضوع وإدخال النص')
+  // اختيار ملف
+  const pickFile = async (e) => {
+    const f = e.target.files?.[0]
+    if (!f) return
+    if (f.size > MAX_FILE) { alert('الملف كبير. الحد الأقصى 2.5 ميغابايت.'); e.target.value = ''; return }
+
+    // ملفات نصية: نحطها بخانة النص مباشرة
+    if (f.type.startsWith('text/') || /\.(txt|md)$/i.test(f.name)) {
+      const content = await f.text()
+      setAiText(prev => (prev ? prev + '\n\n' : '') + content)
+      setAiFile(null)
+      e.target.value = ''
       return
     }
-    
+
+    // PDF وصور: نرسلها لجوجل كـ base64
+    if (f.type === 'application/pdf' || f.type.startsWith('image/')) {
+      const reader = new FileReader()
+      reader.onload = () => setAiFile({ name: f.name, mimeType: f.type, data: String(reader.result).split(',')[1] })
+      reader.readAsDataURL(f)
+      return
+    }
+
+    alert('الصيغ المدعومة: PDF، صور، txt، md. (لملفات Word حوّليها لـ PDF أولاً)')
+    e.target.value = ''
+  }
+
+  // التوليد بالذكاء الاصطناعي
+  const generateWithAI = async (e) => {
+    e.preventDefault()
+    if (!aiText.trim() && !aiFile) { alert('أدخلي نصاً أو ارفعي ملفاً'); return }
+
     setIsGenerating(true)
     try {
       const res = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: aiText })
+        body: JSON.stringify({
+          text: aiText,
+          mode: aiMode,
+          file: aiFile ? { mimeType: aiFile.mimeType, data: aiFile.data } : null
+        })
       })
-      const data = await res.json()
-      
-      if (data.cards) {
-        const newCards = data.cards.map(c => ({ id: uid(), subjectId: activeSub, q: c.q, a: c.a }))
-        setCards([...cards, ...newCards])
-        setAiText('')
-        alert(`تم توليد وإضافة ${newCards.length} بطاقات بنجاح! 🪄`)
-      } else {
-        alert(data.error || 'حدث خطأ في التوليد')
+
+      const raw = await res.text()
+      let data
+      try { data = JSON.parse(raw) } catch {
+        alert(`رد غير متوقع من الخادم (${res.status}). إذا كان الملف كبيراً جربي ملفاً أصغر.`)
+        return
       }
-    } catch (err) {
+
+      if (!res.ok || data.error) { alert(data.error || 'حدث خطأ في التوليد'); return }
+
+      const newCards = (data.cards || []).map(c => ({ id: uid(), subjectId: activeSub, q: c.q, a: c.a }))
+      const newQs = (data.questions || []).map(q => ({
+        id: uid(), subjectId: activeSub, q: q.q, options: q.options, correct: q.correct
+      }))
+
+      if (!newCards.length && !newQs.length) { alert('ما انولد شي، جربي محتوى أوضح.'); return }
+
+      setCards([...cards, ...newCards])
+      setQuestions([...questions, ...newQs])
+      setAiText(''); setAiFile(null)
+      alert(`تمت إضافة ${newCards.length} بطاقة و ${newQs.length} سؤال 🪄`)
+    } catch {
       alert('فشل الاتصال بالخادم')
     } finally {
       setIsGenerating(false)
@@ -101,20 +143,34 @@ export default function Manage({ activeSub, cards, setCards, questions, setQuest
 
   return (
     <section className="manage">
-      
+
       {/* واجهة الذكاء الاصطناعي */}
       <div style={{ background: '#f0fdf4', padding: '16px', borderRadius: '12px', border: '1px solid #bbf7d0', marginBottom: '24px' }}>
-        <h2 style={{ margin: '0 0 12px 0', color: '#166534' }}>✨ توليد بطاقات بالذكاء الاصطناعي</h2>
+        <h2 style={{ margin: '0 0 12px 0', color: '#166534' }}>✨ توليد بطاقات وأسئلة بالذكاء الاصطناعي</h2>
         <form onSubmit={generateWithAI}>
-          <textarea 
-            placeholder="انسخي والصقي النص أو الملخص هنا، وسيقوم الذكاء الاصطناعي باستخراج الأسئلة والأجوبة..." 
-            value={aiText} 
-            onChange={(e) => setAiText(e.target.value)} 
+          <textarea
+            placeholder="الصقي النص هنا، أو ارفعي ملفاً..."
+            value={aiText}
+            onChange={(e) => setAiText(e.target.value)}
             style={{ minHeight: '100px', borderColor: '#86efac' }}
           />
+          <input type="file" accept=".pdf,.txt,.md,image/*" onChange={pickFile} />
+          {aiFile && <p className="muted">📎 {aiFile.name}</p>}
+
+          <select
+            value={aiMode}
+            onChange={(e) => setAiMode(e.target.value)}
+            style={{ font: 'inherit', padding: 10, borderRadius: 10, border: '1px solid #86efac' }}
+          >
+            <option value="both">بطاقات + أسئلة اختبار</option>
+            <option value="cards">بطاقات فقط</option>
+            <option value="quiz">أسئلة اختبار فقط</option>
+          </select>
+
           <div className="row" style={{ justifyContent: 'flex-start' }}>
-            <button className="primary" type="submit" disabled={isGenerating} style={{ background: '#16a34a', borderColor: '#16a34a' }}>
-              {isGenerating ? 'جاري التوليد... ⏳' : 'توليد البطاقات'}
+            <button className="primary" type="submit" disabled={isGenerating}
+              style={{ background: '#16a34a', borderColor: '#16a34a' }}>
+              {isGenerating ? 'جاري التوليد... ⏳' : 'توليد'}
             </button>
           </div>
         </form>
@@ -126,7 +182,7 @@ export default function Manage({ activeSub, cards, setCards, questions, setQuest
         <textarea placeholder="الجواب" value={cardForm.a} onChange={(e) => setCardForm({ ...cardForm, a: e.target.value })} />
         <div className="row" style={{ justifyContent: 'flex-start' }}><button className="primary" type="submit">إضافة</button></div>
       </form>
-      
+
       <ul className="items">
         {currentCards.map((c, index) => (
           <li key={c.id}>
