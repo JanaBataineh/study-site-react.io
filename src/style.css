@@ -40,3 +40,26 @@ textarea { min-height: 70px; resize: vertical; }
 }
 .modal-content h3 { margin-top: 0; margin-bottom: 16px; }
 .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+/* تصميم الشاشة الرئيسية (بوكسات المواد) */
+.subjects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px; margin: 24px 0;
+}
+.subject-box {
+  background: #fff; border: 2px solid #e0e7ff; border-radius: 16px;
+  padding: 24px 16px; cursor: pointer; transition: all 0.2s;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 140px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); position: relative;
+}
+.subject-box:hover {
+  transform: translateY(-5px); box-shadow: 0 10px 15px rgba(0,0,0,0.1); border-color: #4f46e5;
+}
+.subject-title { font-size: 18px; font-weight: bold; color: #1f2430; margin-bottom: 8px; text-align: center; }
+.add-subject-box { border: 2px dashed #a5b4fc; background: #f8fafc; color: #4f46e5; }
+.add-subject-box:hover { background: #eef2ff; }
+.delete-sub-btn {
+  position: absolute; bottom: 12px; font-size: 12px; padding: 4px 8px;
+  background: transparent; border: 1px solid #fca5a5; color: #dc2626; border-radius: 6px;
+}
+.delete-sub-btn:hover { background: #fee2e2; }

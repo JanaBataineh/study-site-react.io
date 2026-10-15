@@ -1,40 +1,34 @@
 import { useState } from 'react'
 import { uid } from '../useStorage.js'
-import { defaultCards, defaultQuestions } from '../defaults.js'
 
 const emptyQ = { q: '', options: ['', '', '', ''], correct: 0 }
 
-export default function Manage({ cards, setCards, questions, setQuestions }) {
+export default function Manage({ activeSub, cards, setCards, questions, setQuestions, currentCards, currentQs }) {
   const [cardForm, setCardForm] = useState({ q: '', a: '' })
   const [qForm, setQForm] = useState(emptyQ)
   const [msg, setMsg] = useState('')
 
-  // حالات النوافذ المنبثقة (Modals)
   const [editingCard, setEditingCard] = useState(null)
   const [editingQ, setEditingQ] = useState(null)
 
-  // 1. إضافة بطاقة جديدة
   const addCard = (e) => {
     e.preventDefault()
     if (!cardForm.q.trim() || !cardForm.a.trim()) return
-    setCards([...cards, { id: uid(), q: cardForm.q.trim(), a: cardForm.a.trim() }])
+    // الإضافة تتم مباشرة للقسم المفتوح
+    setCards([...cards, { id: uid(), subjectId: activeSub, q: cardForm.q.trim(), a: cardForm.a.trim() }])
     setCardForm({ q: '', a: '' })
   }
 
-  // 2. تحديث بطاقة من النافذة المنبثقة
   const updateCard = (e) => {
     e.preventDefault()
     if (!editingCard.q.trim() || !editingCard.a.trim()) return
     setCards(cards.map(c => c.id === editingCard.id ? { ...editingCard, q: editingCard.q.trim(), a: editingCard.a.trim() } : c))
-    setEditingCard(null) // إغلاق النافذة
+    setEditingCard(null)
   }
 
-  // 3. إضافة سؤال جديد
   const addQuestion = (e) => {
     e.preventDefault()
-    const filled = qForm.options
-      .map((text, i) => ({ text: text.trim(), i }))
-      .filter((o) => o.text)
+    const filled = qForm.options.map((text, i) => ({ text: text.trim(), i })).filter((o) => o.text)
     const correctPos = filled.findIndex((o) => o.i === qForm.correct)
     
     if (!qForm.q.trim() || filled.length < 2 || correctPos === -1) {
@@ -42,19 +36,13 @@ export default function Manage({ cards, setCards, questions, setQuestions }) {
       return
     }
     setMsg('')
-    setQuestions([
-      ...questions,
-      { id: uid(), q: qForm.q.trim(), options: filled.map((o) => o.text), correct: correctPos }
-    ])
+    setQuestions([...questions, { id: uid(), subjectId: activeSub, q: qForm.q.trim(), options: filled.map((o) => o.text), correct: correctPos }])
     setQForm(emptyQ)
   }
 
-  // 4. تحديث سؤال من النافذة المنبثقة
   const updateQuestion = (e) => {
     e.preventDefault()
-    const filled = editingQ.options
-      .map((text, i) => ({ text: text.trim(), i }))
-      .filter((o) => o.text)
+    const filled = editingQ.options.map((text, i) => ({ text: text.trim(), i })).filter((o) => o.text)
     const correctPos = filled.findIndex((o) => o.i === editingQ.correct)
     
     if (!editingQ.q.trim() || filled.length < 2 || correctPos === -1) {
@@ -62,61 +50,18 @@ export default function Manage({ cards, setCards, questions, setQuestions }) {
       return
     }
     
-    setQuestions(questions.map(q => q.id === editingQ.id ? { id: editingQ.id, q: editingQ.q.trim(), options: filled.map(o => o.text), correct: correctPos } : q))
-    setEditingQ(null) // إغلاق النافذة
+    setQuestions(questions.map(q => q.id === editingQ.id ? { id: editingQ.id, subjectId: activeSub, q: editingQ.q.trim(), options: filled.map(o => o.text), correct: correctPos } : q))
+    setEditingQ(null)
   }
 
   const setOption = (i, value) => {
-    const options = [...qForm.options]
-    options[i] = value
-    setQForm({ ...qForm, options })
+    const options = [...qForm.options]; options[i] = value; setQForm({ ...qForm, options })
   }
-
   const setEditOption = (i, value) => {
-    const options = [...editingQ.options]
-    options[i] = value
-    setEditingQ({ ...editingQ, options })
+    const options = [...editingQ.options]; options[i] = value; setEditingQ({ ...editingQ, options })
   }
-
   const openEditQ = (q) => {
-    const newOptions = ['', '', '', '']
-    q.options.forEach((opt, i) => { if (i < 4) newOptions[i] = opt })
-    setEditingQ({ ...q, options: newOptions })
-  }
-
-  const exportData = () => {
-    const blob = new Blob([JSON.stringify({ cards, questions }, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'study-data.json'
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
-  const importData = (e) => {
-    const file = e.target.files[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => {
-      try {
-        const data = JSON.parse(reader.result)
-        if (!Array.isArray(data.cards) || !Array.isArray(data.questions)) throw new Error()
-        setCards(data.cards)
-        setQuestions(data.questions)
-        setMsg('تم الاستيراد بنجاح.')
-      } catch {
-        setMsg('الملف غير صالح.')
-      }
-    }
-    reader.readAsText(file)
-    e.target.value = ''
-  }
-
-  const resetAll = () => {
-    if (!window.confirm('راح تُحذف كل بياناتك وترجع للبيانات المبدئية. متأكد؟')) return
-    setCards(defaultCards)
-    setQuestions(defaultQuestions)
+    const newOptions = ['', '', '', '']; q.options.forEach((opt, i) => { if (i < 4) newOptions[i] = opt }); setEditingQ({ ...q, options: newOptions })
   }
 
   return (
@@ -125,14 +70,11 @@ export default function Manage({ cards, setCards, questions, setQuestions }) {
       <form onSubmit={addCard}>
         <input placeholder="السؤال" value={cardForm.q} onChange={(e) => setCardForm({ ...cardForm, q: e.target.value })} />
         <textarea placeholder="الجواب" value={cardForm.a} onChange={(e) => setCardForm({ ...cardForm, a: e.target.value })} />
-        <div className="row" style={{ justifyContent: 'flex-start' }}>
-          <button className="primary" type="submit">إضافة</button>
-        </div>
+        <div className="row" style={{ justifyContent: 'flex-start' }}><button className="primary" type="submit">إضافة</button></div>
       </form>
       
-      {/* تم إضافة الترقيم هنا (index + 1) */}
       <ul className="items">
-        {cards.map((c, index) => (
+        {currentCards.map((c, index) => (
           <li key={c.id}>
             <span>{index + 1}. {c.q}</span>
             <div style={{ display: 'flex', gap: '8px' }}>
@@ -143,7 +85,7 @@ export default function Manage({ cards, setCards, questions, setQuestions }) {
         ))}
       </ul>
 
-      <h2>إضافة سؤال اختيار من متعدد</h2>
+      <h2>إضافة سؤال اختبار</h2>
       <form onSubmit={addQuestion}>
         <input placeholder="السؤال" value={qForm.q} onChange={(e) => setQForm({ ...qForm, q: e.target.value })} />
         {qForm.options.map((opt, i) => (
@@ -153,14 +95,11 @@ export default function Manage({ cards, setCards, questions, setQuestions }) {
           </label>
         ))}
         <p className="muted">حدد الدائرة بجانب الخيار الصحيح</p>
-        <div className="row" style={{ justifyContent: 'flex-start' }}>
-          <button className="primary" type="submit">إضافة</button>
-        </div>
+        <div className="row" style={{ justifyContent: 'flex-start' }}><button className="primary" type="submit">إضافة</button></div>
       </form>
 
-      {/* تم إضافة الترقيم هنا للأسئلة أيضاً */}
       <ul className="items">
-        {questions.map((q, index) => (
+        {currentQs.map((q, index) => (
           <li key={q.id}>
             <span>{index + 1}. {q.q}</span>
             <div style={{ display: 'flex', gap: '8px' }}>
@@ -170,21 +109,9 @@ export default function Manage({ cards, setCards, questions, setQuestions }) {
           </li>
         ))}
       </ul>
-
-      <h2>نسخ احتياطي</h2>
-      <div className="row">
-        <button onClick={exportData}>تصدير JSON</button>
-        <label className="file-btn">
-          استيراد JSON
-          <input type="file" accept="application/json" onChange={importData} hidden />
-        </label>
-        <button className="danger" onClick={resetAll}>إعادة ضبط</button>
-      </div>
       {msg && <p className="muted">{msg}</p>}
 
-      {/* --- الشاشات المنبثقة (Modals) --- */}
-      
-      {/* نافذة تعديل البطاقة */}
+      {/* الشاشات المنبثقة للتعديل */}
       {editingCard && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -201,7 +128,6 @@ export default function Manage({ cards, setCards, questions, setQuestions }) {
         </div>
       )}
 
-      {/* نافذة تعديل السؤال */}
       {editingQ && (
         <div className="modal-overlay">
           <div className="modal-content">
