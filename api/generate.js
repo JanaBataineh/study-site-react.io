@@ -8,8 +8,8 @@ export default async function handler(req, res) {
   const apiKey = process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.trim() : ''
   if (!apiKey) return res.status(500).json({ error: 'مفتاح API مفقود من إعدادات Vercel' })
 
-  // استخدام النموذج المستقر gemini-pro
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`
+  // استخدام النموذج الجديد المعتمد من جوجل gemini-2.5-flash
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`
 
   const prompt = `
   أنت معلم خبير. استخرج بطاقات دراسية (سؤال وجواب) من النص التالي.
