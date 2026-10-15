@@ -2,7 +2,39 @@ import { useState } from 'react'
 import { uid } from '../useStorage.js'
 
 const emptyQ = { q: '', options: ['', '', '', ''], correct: 0 }
-
+const [aiText, setAiText] = useState('')
+const [isGenerating, setIsGenerating] = useState(false)
+const generateWithAI = async (e) => {
+  e.preventDefault()
+  if (!aiText.trim() || !activeSub) {
+    alert('الرجاء اختيار الموضوع وإدخال النص')
+    return
+  }
+  
+  setIsGenerating(true)
+  try {
+    const res = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: aiText })
+    })
+    const data = await res.json()
+    
+    if (data.cards) {
+      // تجهيز البطاقات الجديدة وإضافتها للقسم الحالي
+      const newCards = data.cards.map(c => ({ id: uid(), subjectId: activeSub, q: c.q, a: c.a }))
+      setCards([...cards, ...newCards])
+      setAiText('')
+      alert(`تم توليد وإضافة ${newCards.length} بطاقات بنجاح! 🪄`)
+    } else {
+      alert(data.error || 'حدث خطأ في التوليد')
+    }
+  } catch (err) {
+    alert('فشل الاتصال بالخادم')
+  } finally {
+    setIsGenerating(false)
+  }
+}
 export default function Manage({ activeSub, cards, setCards, questions, setQuestions, currentCards, currentQs }) {
   const [cardForm, setCardForm] = useState({ q: '', a: '' })
   const [qForm, setQForm] = useState(emptyQ)
@@ -66,6 +98,23 @@ export default function Manage({ activeSub, cards, setCards, questions, setQuest
 
   return (
     <section className="manage">
+      {/* واجهة الذكاء الاصطناعي */}
+<div style={{ background: '#f0fdf4', padding: '16px', borderRadius: '12px', border: '1px solid #bbf7d0', marginBottom: '24px' }}>
+  <h2 style={{ margin: '0 0 12px 0', color: '#166534' }}>✨ توليد بطاقات بالذكاء الاصطناعي</h2>
+  <form onSubmit={generateWithAI}>
+    <textarea 
+      placeholder="انسخي والصقي النص أو الملخص هنا، وسيقوم الذكاء الاصطناعي باستخراج الأسئلة والأجوبة..." 
+      value={aiText} 
+      onChange={(e) => setAiText(e.target.value)} 
+      style={{ minHeight: '100px', borderColor: '#86efac' }}
+    />
+    <div className="row" style={{ justifyContent: 'flex-start' }}>
+      <button className="primary" type="submit" disabled={isGenerating} style={{ background: '#16a34a', borderColor: '#16a34a' }}>
+        {isGenerating ? 'جاري التوليد... ⏳' : 'توليد البطاقات'}
+      </button>
+    </div>
+  </form>
+</div>
       <h2>إضافة بطاقة</h2>
       <form onSubmit={addCard}>
         <input placeholder="السؤال" value={cardForm.q} onChange={(e) => setCardForm({ ...cardForm, q: e.target.value })} />
