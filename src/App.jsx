@@ -22,8 +22,17 @@ export default function App() {
     }
   }
 
+  // دالة تعديل اسم الموضوع
+  const editSubject = (e, id, currentName) => {
+    e.stopPropagation() // يمنع فتح البوكس عند الضغط على زر التعديل
+    const newName = window.prompt('تعديل اسم الموضوع:', currentName)
+    if (newName && newName.trim() && newName.trim() !== currentName) {
+      setSubjects(subjects.map(s => s.id === id ? { ...s, name: newName.trim() } : s))
+    }
+  }
+
   const deleteSubject = (e, id) => {
-    e.stopPropagation() // يمنع فتح البوكس عند الضغط على زر الحذف
+    e.stopPropagation()
     if (window.confirm('تحذير: راح ينحذف هذا البوكس وكل البطاقات والأسئلة اللي جواه. متأكدة؟')) {
       setSubjects(subjects.filter(s => s.id !== id))
       setCards(cards.filter(c => c.subjectId !== id))
@@ -31,12 +40,10 @@ export default function App() {
     }
   }
 
-  // إذا تم اختيار بوكس (مادة)، نعرض البطاقات والاختبارات الخاصة فيه
   if (activeSub) {
     const subInfo = subjects.find(s => s.id === activeSub)
     if (!subInfo) { setActiveSub(null); return null }
 
-    // دعم للبطاقات القديمة لتظهر في أول بوكس
     const isFirstSub = subjects.length > 0 && activeSub === subjects[0].id
     const currentCards = cards.filter(c => c.subjectId === activeSub || (!c.subjectId && isFirstSub))
     const currentQs = questions.filter(q => q.subjectId === activeSub || (!q.subjectId && isFirstSub))
@@ -68,7 +75,6 @@ export default function App() {
     )
   }
 
-  // الشاشة الرئيسية (شاشة البوكسات)
   return (
     <main className="container">
       <h1 style={{ fontSize: '28px', marginBottom: '8px' }}>مواضيعي الدراسية 📚</h1>
@@ -82,10 +88,14 @@ export default function App() {
           return (
             <div key={sub.id} className="subject-box" onClick={() => setActiveSub(sub.id)}>
               <div className="subject-title">{sub.name}</div>
-              <div className="muted" style={{ fontSize: '12px', marginBottom: '16px' }}>
+              <div className="muted" style={{ fontSize: '12px', marginBottom: '32px' }}>
                 {subCardsCount} بطاقة | {subQsCount} سؤال
               </div>
-              <button className="delete-sub-btn" onClick={(e) => deleteSubject(e, sub.id)}>حذف البوكس</button>
+              
+              <div className="box-actions">
+                <button className="action-btn edit-btn" onClick={(e) => editSubject(e, sub.id, sub.name)}>تعديل</button>
+                <button className="action-btn del-btn" onClick={(e) => deleteSubject(e, sub.id)}>حذف</button>
+              </div>
             </div>
           )
         })}

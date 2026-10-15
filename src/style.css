@@ -58,8 +58,15 @@ textarea { min-height: 70px; resize: vertical; }
 .subject-title { font-size: 18px; font-weight: bold; color: #1f2430; margin-bottom: 8px; text-align: center; }
 .add-subject-box { border: 2px dashed #a5b4fc; background: #f8fafc; color: #4f46e5; }
 .add-subject-box:hover { background: #eef2ff; }
-.delete-sub-btn {
-  position: absolute; bottom: 12px; font-size: 12px; padding: 4px 8px;
-  background: transparent; border: 1px solid #fca5a5; color: #dc2626; border-radius: 6px;
+/* أزرار البوكسات (تعديل وحذف) */
+.box-actions {
+  position: absolute; bottom: 12px; display: flex; gap: 8px;
 }
-.delete-sub-btn:hover { background: #fee2e2; }
+.action-btn {
+  font-size: 12px; padding: 4px 12px; background: #fff; border-radius: 6px; 
+  cursor: pointer; transition: all 0.2s; border: 1px solid;
+}
+.edit-btn { border-color: #d1d5db; color: #4b5563; }
+.edit-btn:hover { background: #f3f4f6; }
+.del-btn { border-color: #fca5a5; color: #dc2626; }
+.del-btn:hover { background: #fee2e2; }
