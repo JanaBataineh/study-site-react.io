@@ -1,4 +1,3 @@
-// المسار: api/generate.js
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' })
   
@@ -6,7 +5,7 @@ export default async function handler(req, res) {
   if (!text) return res.status(400).json({ error: 'النص مطلوب' })
 
   const apiKey = process.env.GEMINI_API_KEY
-  if (!apiKey) return res.status(500).json({ error: 'مفتاح API مفقود' })
+  if (!apiKey) return res.status(500).json({ error: 'مفتاح API مفقود من إعدادات Vercel' })
 
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`
 
@@ -27,15 +26,26 @@ export default async function handler(req, res) {
     })
     
     const data = await response.json()
+    
+    // التحقق من وجود خطأ من جوجل (مثل مفتاح غير صالح)
+    if (data.error) {
+      console.error("Google API Error:", data.error)
+      return res.status(500).json({ error: 'خطأ من جوجل: ' + data.error.message })
+    }
+
+    // التحقق من نجاح توليد النص
+    if (!data.candidates || !data.candidates[0]) {
+      return res.status(500).json({ error: 'جوجل لم يرجع أي نتيجة.' })
+    }
+
     const aiOutput = data.candidates[0].content.parts[0].text
     
-    // تنظيف الرد تحسباً لوجود علامات Markdown
     const cleanJson = aiOutput.replace(/```json/g, '').replace(/```/g, '').trim()
     const generatedCards = JSON.parse(cleanJson)
     
     res.status(200).json({ cards: generatedCards })
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ error: 'حدث خطأ أثناء التوليد' })
+    console.error("Server Error:", error)
+    res.status(500).json({ error: 'حدث خطأ أثناء المعالجة: ' + error.message })
   }
 }
