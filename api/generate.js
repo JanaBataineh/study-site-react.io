@@ -7,7 +7,8 @@ export default async function handler(req, res) {
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) return res.status(500).json({ error: 'مفتاح API مفقود من إعدادات Vercel' })
 
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`
+  // التغيير هنا: استخدمنا gemini-1.5-flash-latest بدلاً من القديم
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`
 
   const prompt = `
   أنت معلم خبير. اقرأ النص التالي واستخرج منه بطاقات دراسية (سؤال وجواب) تلخص أهم النقاط.
@@ -27,13 +28,11 @@ export default async function handler(req, res) {
     
     const data = await response.json()
     
-    // التحقق من وجود خطأ من جوجل (مثل مفتاح غير صالح)
     if (data.error) {
       console.error("Google API Error:", data.error)
       return res.status(500).json({ error: 'خطأ من جوجل: ' + data.error.message })
     }
 
-    // التحقق من نجاح توليد النص
     if (!data.candidates || !data.candidates[0]) {
       return res.status(500).json({ error: 'جوجل لم يرجع أي نتيجة.' })
     }
