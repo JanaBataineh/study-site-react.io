@@ -1,100 +1,91 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState, useEffect } from 'react';
 
-// ضعي ملفاتك في مجلد public/ بهذه الأسماء (أو غيّري الأسماء هنا):
-//   public/gumball.png   صورة الشخصية الأولى (يفضل PNG بخلفية شفافة)
-//   public/darwin.png    صورة الشخصية الثانية (يفضل PNG بخلفية شفافة)
-//   public/intro.mp3     موسيقى شارة البداية
-const GUMBALL_IMG = '/gumball.png'
-const DARWIN_IMG = '/darwin.png'
-const MUSIC_SRC = '/intro.mp3'
-
-const STARS = Array.from({ length: 90 }, (_, i) => ({
-  id: i, left: Math.random() * 100, top: Math.random() * 100,
-  size: 2 + Math.random() * 5, delay: Math.random() * 3, dur: 1.5 + Math.random() * 2.5
-}))
-
-const RAINBOW = ['#ff2d95', '#ff8fd0', '#f6f7a8', '#c9a6ff', '#7a5cff']
-const LETTERS = [
-  ['G', '#2ecc40'], ['U', '#ff8c00'], ['M', '#1e3cff'], ['B', '#e0201c'],
-  ['A', '#2ecc40'], ['L', '#1aa3e8'], ['L', '#b45cff']
-]
-
-function Character({ src, name, className, emoji }) {
-  const [broken, setBroken] = useState(false)
-  const [jump, setJump] = useState(false)
-  const poke = () => { setJump(true); setTimeout(() => setJump(false), 700) }
-
-  return (
-    <div className={`intro-char ${className} ${jump ? 'poked' : ''}`} onClick={poke} onMouseEnter={poke}>
-      {broken
-        ? <div className="intro-char-fallback">{emoji}<small>ضعي {name} في public</small></div>
-        : <img src={src} alt={name} draggable="false" onError={() => setBroken(true)} />}
-    </div>
-  )
-}
+// توليد مصفوفة من النجوم العشوائية لتبدو مثل الصورة تماماً
+const NUM_STARS = 200;
+const STARS = Array.from({ length: NUM_STARS }, (_, i) => ({
+  id: i,
+  left: Math.random() * 100, // موقع أفقي عشوائي
+  top: Math.random() * 100,  // موقع عمودي عشوائي
+  size: Math.random() * 3 + 1, // حجم النجمة بين 1 و 4 بكسل
+  delay: Math.random() * 5, // تأخير عشوائي لحركة التلألؤ
+  duration: Math.random() * 3 + 2, // سرعة التلألؤ بين 2 و 5 ثواني
+  // إعطاء ألوان خفيفة متفرقة (أبيض، أزرق فاتح، أصفر فاتح) لزيادة الواقعية
+  color: ['#ffffff', '#e0f7fa', '#fff9c4'][Math.floor(Math.random() * 3)]
+}));
 
 export default function Intro({ onEnter }) {
-  const [started, setStarted] = useState(false)
-  const [muted, setMuted] = useState(false)
-  const audioRef = useRef(null)
+  const [started, setStarted] = useState(false);
+  useEffect(() => {
+    if (started) {
+      const timer = setTimeout(() => {
+        onEnter(); // الدخول للموقع تلقائياً
+      }, 10000); // 3000 تعني 3 ثوانٍ، يمكنك تغييرها لأي رقم (مثلاً 4000 لـ 4 ثوانٍ)
 
-  const start = () => {
-    setStarted(true)
-    const a = audioRef.current
-    if (a) { a.currentTime = 0; a.volume = 0.8; a.play().catch(() => {}) }
-  }
-  const toggleMute = () => {
-    const a = audioRef.current
-    if (!a) return
-    a.muted = !a.muted
-    setMuted(a.muted)
-  }
-  const enter = () => { audioRef.current?.pause(); onEnter() }
+      return () => clearTimeout(timer); // تنظيف العداد
+    }
+  }, [started, onEnter]);
 
-  useEffect(() => () => audioRef.current?.pause(), [])
 
+
+  // دالة زر "ادخلي للموقع"
+  const enter = () => {
+    onEnter();
+  };
   return (
-    <div className={`intro-screen ${started ? 'playing' : ''}`}>
-      <audio ref={audioRef} src={MUSIC_SRC} loop preload="auto" />
-
-      <div className="intro-stars">
-        {STARS.map(s => (
-          <span key={s.id} className="intro-star" style={{
-            left: s.left + '%', top: s.top + '%', width: s.size, height: s.size,
-            animationDelay: s.delay + 's', animationDuration: s.dur + 's'
-          }} />
+    <div className="new-intro-screen">
+      <div className="stars-container">
+        {STARS.map(star => (
+          <div
+            key={star.id}
+            className="star"
+            style={{
+              left: `${star.left}%`,
+              top: `${star.top}%`,
+              width: `${star.size}px`,
+              height: `${star.size}px`,
+              backgroundColor: star.color,
+              boxShadow: `0 0 ${star.size * 2.5}px ${star.color}`, // تأثير التوهج حول النجمة
+              animationDelay: `${star.delay}s`,
+              animationDuration: `${star.duration}s`
+            }}
+          />
         ))}
       </div>
 
-      <div className="intro-logo">
-        <div className="intro-rainbow">
-          {RAINBOW.map((c, i) => (
-            <div key={i} className="arc" style={{ background: c, inset: `${i * 0.5}em`, animationDelay: i * 0.12 + 's' }} />
-          ))}
-          <div className="arc-hole" />
-        </div>
-        <div className="intro-word-top">عالم</div>
-        <div className="intro-word-main">
-          {LETTERS.map(([ch, color], i) => (
-            <span key={i} style={{ color, animationDelay: i * 0.1 + 's' }}>{ch}</span>
-          ))}
-        </div>
-        <div className="intro-word-bottom">المدهش</div>
-      </div>
 
-      <Character src={GUMBALL_IMG} name="الشخصية الأولى" emoji="🐱" className="char-left" />
-      <Character src={DARWIN_IMG} name="الشخصية الثانية" emoji="🐠" className="char-right" />
-
-      <div className="intro-controls">
+      {/* حاوية قوس قزح والأزرار في المنتصف */}
+      <div className="center-content">
         {!started ? (
-          <button className="primary intro-btn" onClick={start}>🎬 ابدأ المغامرة</button>
-        ) : (
           <>
-            <button className="primary intro-btn" onClick={enter}>🚀 ادخلي للموقع</button>
-            <button onClick={toggleMute}>{muted ? '🔇 تشغيل الصوت' : '🔊 كتم الصوت'}</button>
+            {/* قوس قزح المصمم بـ CSS */}
+            <div className="rainbow-wrapper">
+              <div className="css-rainbow"></div>
+              {/* النصوص المصممة بالكود */}
+              <div className="gumball-text-logo">
+                <div className="txt-the">The</div>
+                <div className="txt-amazing">AMAZING<br />WORLD OF</div>
+                <div className="txt-gumball">
+                  <span className="c-g">G</span>
+                  <span className="c-u">U</span>
+                  <span className="c-m">M</span>
+                  <span className="c-b">B</span>
+                  <span className="c-a">A</span>
+                  <span className="c-l1">L</span>
+                  <span className="c-l2">L</span>
+                </div>
+              </div>
+            </div>
+            <button className="primary intro-btn" onClick={() => setStarted(true)}>
+              🎬 ابدأ المغامرة
+            </button>
           </>
-        )}
+        ) : (
+          <div className="uploads-wrapper">
+            <div className="txt-the-word">THE</div>
+            <div className="txt-uploads-word">STUDY</div>
+          </div>)}
       </div>
     </div>
-  )
+  );
+
 }
