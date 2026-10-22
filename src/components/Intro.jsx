@@ -19,7 +19,7 @@ export default function Intro({ onEnter }) {
     if (started) {
       const timer = setTimeout(() => {
         onEnter(); // الدخول للموقع تلقائياً
-      }, 10000); // 3000 تعني 3 ثوانٍ، يمكنك تغييرها لأي رقم (مثلاً 4000 لـ 4 ثوانٍ)
+      }, 3000); // 3000 تعني 3 ثوانٍ، يمكنك تغييرها لأي رقم (مثلاً 4000 لـ 4 ثوانٍ)
 
       return () => clearTimeout(timer); // تنظيف العداد
     }
