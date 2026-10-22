@@ -5,13 +5,22 @@
 body {
   margin: 0;
   font-family: 'Cairo', system-ui, "Segoe UI", Tahoma, sans-serif;
-  background: radial-gradient(circle at center, #70d6ff 0%, #ff70a6 50%, #ff9770 100%);
-  background-attachment: fixed;
   color: #1f2430;
   min-height: 100vh;
   perspective: 1200px;
 }
-
+#bg-video {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  min-width: 100%;
+  min-height: 100%;
+  width: auto;
+  height: auto;
+  z-index: -100; /* لضمان بقائه خلف جميع العناصر */
+  object-fit: cover;
+  filter: brightness(0.85); /* تعتيم خفيف لضمان وضوح النصوص والبطاقات */
+}
 .container {
   max-width: 680px;
   margin: 0 auto;
@@ -685,4 +694,19 @@ textarea {
   50% {
     transform: translateY(-15px) scale(1.02);
   }
+}
+
+@keyframes cinematicFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(40px); /* تبدأ من الأسفل قليلاً */
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.smooth-show {
+  animation: cinematicFadeIn 1.2s ease-out forwards;
 }

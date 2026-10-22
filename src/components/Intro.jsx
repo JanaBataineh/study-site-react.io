@@ -18,8 +18,14 @@ export default function Intro({ onEnter }) {
   useEffect(() => {
     if (started) {
       const timer = setTimeout(() => {
+        const bgVideo = document.getElementById('bg-video');
+        if (bgVideo) {
+          bgVideo.muted = false; // تفعيل الصوت
+          // استخدام catch لتجنب أي أخطاء إذا منع المتصفح التشغيل
+          bgVideo.play().catch(err => console.log('تعذر تشغيل الفيديو:', err)); 
+        }
         onEnter(); // الدخول للموقع تلقائياً
-      }, 3000); // 3000 تعني 3 ثوانٍ، يمكنك تغييرها لأي رقم (مثلاً 4000 لـ 4 ثوانٍ)
+      }, 2000); // 1000 تعني 1 ثانية، يمكنك تغييرها لأي رقم (مثلاً 4000 لـ 4 ثوانٍ)
 
       return () => clearTimeout(timer); // تنظيف العداد
     }
