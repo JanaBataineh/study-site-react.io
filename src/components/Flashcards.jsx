@@ -19,8 +19,8 @@ export default function Flashcards({ cards }) {
       <p className="muted">بطاقة {i + 1} من {cards.length}</p>
       <div className="card-scene" onClick={() => setFlipped(!flipped)}>
         <div className={'card' + (flipped ? ' flipped' : '')}>
-          <div className="face front">{card.q}</div>
-          <div className="face back">{card.a}</div>
+          <div className="face front" style={{ whiteSpace: 'pre-wrap' }}>{card.q}</div>
+          <div className="face back" style={{ whiteSpace: 'pre-wrap' }}>{card.a}</div>
         </div>
       </div>
       <p className="muted">اضغط على البطاقة لقلبها</p>

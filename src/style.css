@@ -127,12 +127,17 @@ button:active {
   box-shadow: 0 10px 0 #1f2430, 0 15px 25px rgba(0, 0, 0, 0.2);
   font-size: 24px;
   font-weight: 900;
+  white-space: pre-wrap;
+  overflow-y: auto;
 }
 
 .back {
   transform: rotateY(180deg);
   background: #ffb703;
   color: #1f2430;
+  white-space: pre-wrap; 
+  text-align: center;
+  overflow-y: auto;
 }
 
 .option {
