@@ -1,18 +1,47 @@
 import { useState, useEffect } from 'react'
+import { db } from './firebase.js'
+import { doc, getDoc, setDoc } from 'firebase/firestore'
 
-// يحفظ القيمة في localStorage تلقائياً ويرجعها عند فتح الموقع
+// هذه الدالة صارت تتصل بـ Firebase بدلاً من ذاكرة المتصفح
 export function useStorage(key, initial) {
-  const [value, setValue] = useState(() => {
-    try {
-      const raw = localStorage.getItem(key)
-      if (raw) return JSON.parse(raw)
-    } catch {}
-    return initial
-  })
+  const [value, setValue] = useState(initial)
+  const [isLoaded, setIsLoaded] = useState(false)
 
+  // 1. جلب البيانات من السحابة عند فتح الموقع
   useEffect(() => {
-    try { localStorage.setItem(key, JSON.stringify(value)) } catch {}
-  }, [key, value])
+    const loadData = async () => {
+      try {
+        // استبدال النقطتين الرأسيتين بشرطة لتناسب أسماء ملفات فايربيز
+        const safeKey = key.replace(':', '-') 
+        const docRef = doc(db, "elmoreData", safeKey) 
+        
+        const snapshot = await getDoc(docRef)
+        if (snapshot.exists()) {
+          setValue(snapshot.data().items)
+        }
+      } catch (error) {
+        console.error("خطأ في جلب البيانات:", error)
+      }
+      setIsLoaded(true)
+    }
+    loadData()
+  }, [key])
+
+  // 2. حفظ البيانات في السحابة عند أي إضافة/حذف/تعديل
+  useEffect(() => {
+    if (!isLoaded) return // لا تحفظ قبل أن يكتمل التحميل
+    
+    const saveData = async () => {
+      try {
+        const safeKey = key.replace(':', '-')
+        const docRef = doc(db, "elmoreData", safeKey)
+        await setDoc(docRef, { items: value })
+      } catch (error) {
+        console.error("خطأ في حفظ البيانات:", error)
+      }
+    }
+    saveData()
+  }, [key, value, isLoaded])
 
   return [value, setValue]
 }
