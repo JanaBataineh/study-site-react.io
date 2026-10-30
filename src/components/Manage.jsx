@@ -417,12 +417,6 @@ export default function Manage({ activeSub, cards, setCards, questions, setQuest
         </form>
       </div>
 
-      <h2>إضافة بطاقة يدوياً</h2>
-      <form onSubmit={addCard}>
-        <input placeholder="السؤال" value={cardForm.q} onChange={(e) => setCardForm({ ...cardForm, q: e.target.value })} />
-        <textarea placeholder="الجواب" value={cardForm.a} onChange={(e) => setCardForm({ ...cardForm, a: e.target.value })} />
-        <div className="row" style={{ justifyContent: 'flex-start' }}><button className="primary" type="submit">إضافة</button></div>
-      </form>
       <div style={{ background: '#f8fafc', padding: '24px', borderRadius: '16px', border: '3px solid #cbd5e1', marginBottom: '24px' }}>
         <h2 style={{ margin: '0 0 16px 0', color: '#334155' }}>📥 استيراد البطاقات من الذكاء الاصطناعي (Claude, ChatGPT, Gemini)</h2>
 
@@ -458,6 +452,13 @@ export default function Manage({ activeSub, cards, setCards, questions, setQuest
           </div>
         </form>
       </div>
+      
+     <h2>إضافة بطاقة يدوياً</h2>
+      <form onSubmit={addCard}>
+        <input placeholder="السؤال" value={cardForm.q} onChange={(e) => setCardForm({ ...cardForm, q: e.target.value })} />
+        <textarea placeholder="الجواب" value={cardForm.a} onChange={(e) => setCardForm({ ...cardForm, a: e.target.value })} />
+        <div className="row" style={{ justifyContent: 'flex-start' }}><button className="primary" type="submit">إضافة</button></div>
+      </form>
       <ul className="items">
         {currentCards.map((c, index) => (
           <li key={c.id}>
@@ -482,7 +483,7 @@ export default function Manage({ activeSub, cards, setCards, questions, setQuest
         <p className="muted">حدد الدائرة بجانب الخيار الصحيح</p>
         <div className="row" style={{ justifyContent: 'flex-start' }}><button className="primary" type="submit">إضافة</button></div>
       </form>
-
+ 
       <ul className="items">
         {currentQs.map((q, index) => (
           <li key={q.id}>
