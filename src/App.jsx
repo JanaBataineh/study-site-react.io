@@ -28,8 +28,10 @@ export default function App() {
   const [activeSub, setActiveSub] = useState(null)
   const [tab, setTab] = useState('cards')
   // حالة جديدة لمعرفة هل انتهى الفيديو أم لا
-  const [videoEnded, setVideoEnded] = useState(false)
-
+const [videoEnded, setVideoEnded] = useState(() => {
+    // إذا كان المستخدم قد رأى المقدمة مسبقاً، نعتبر أن الفيديو انتهى فوراً لكي لا نرى شاشة بيضاء
+    return localStorage.getItem('study:introSeen') ? true : false;
+  })
   // أضيفي هذه الحالات (States) تحت حالات useState الموجودة
   const [showAddModal, setShowAddModal] = useState(false);
   const [newSubName, setNewSubName] = useState('');
@@ -87,7 +89,6 @@ const openEditSubjectModal = (e, sub) => {
       }
     }
   }, [showIntro])
-
   // استبدلي دالة addSubject القديمة بهذه:
   const openAddSubjectModal = () => {
     setEditingSubId(null); // تصفير الـ id يعني أننا نضيف مادة جديدة
