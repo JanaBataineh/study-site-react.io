@@ -85,6 +85,33 @@ export default function Manage({ activeSub, cards, setCards, questions, setQuest
   const [fileStatus, setFileStatus] = useState('')
   const [aiFiles, setAiFiles] = useState([])
   const [aiMode, setAiMode] = useState('both')
+  const [jsonInput, setJsonInput] = useState('')
+  const [copied, setCopied] = useState(false)
+
+  const promptText = `أنت خبير تعليمي. اقرأ المستند المرفق واستخرج أهم المفاهيم.
+ملاحظة هامة للغة: حافظ على لغة المستند الأصلية. إذا كان الملف بالإنجليزية، اكتب البطاقات والأسئلة بالإنجليزية. إذا كان بالعربية، استخدم العربية. وإذا كان مختلطاً (مثلاً شرح عربي ومصطلحات إنجليزية)، فحافظ على هذا المزيج كما هو دون ترجمة المصطلحات.
+
+أرجع النتيجة فقط وحصرياً بصيغة JSON بدون أي نصوص، مقدمات، أو تنسيقات أخرى.
+الهيكلة المطلوبة:
+{
+  "cards": [
+    {"q": "السؤال هنا بنفس لغة الملف", "a": "الجواب هنا بنفس لغة الملف"}
+  ],
+  "questions": [
+    {
+      "q": "سؤال الاختيار من متعدد هنا",
+      "options": ["خيار 1", "خيار 2", "خيار 3", "خيار 4"],
+      "correct": 0
+    }
+  ]
+}
+ملاحظة: correct هو رقم الإجابة الصحيحة (من 0 إلى 3). إذا لم تجد معلومات لإنشاء أسئلة، اترك المصفوفة فارغة [].`
+  const copyPrompt = (e) => {
+    e.preventDefault()
+    navigator.clipboard.writeText(promptText)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   const addCard = (e) => {
     e.preventDefault()
@@ -309,7 +336,54 @@ export default function Manage({ activeSub, cards, setCards, questions, setQuest
       setIsGenerating(false)
     }
   }
+  const handleImportJson = (e) => {
+    e.preventDefault()
+    if (!jsonInput.trim()) return
 
+    try {
+      // تنظيف النص في حال كان كلود قد أضاف علامات ```json في البداية والنهاية
+      const cleanText = jsonInput.replace(/```json|```/g, '').trim()
+      const parsed = JSON.parse(cleanText)
+
+      let importedCards = []
+      let importedQs = []
+
+      // تجهيز البطاقات
+      if (parsed.cards && Array.isArray(parsed.cards)) {
+        importedCards = parsed.cards.map(c => ({
+          id: uid(),
+          subjectId: activeSub,
+          q: c.q,
+          a: c.a
+        }))
+      }
+
+      // تجهيز الأسئلة
+      if (parsed.questions && Array.isArray(parsed.questions)) {
+        importedQs = parsed.questions.map(q => ({
+          id: uid(),
+          subjectId: activeSub,
+          q: q.q,
+          options: q.options,
+          correct: q.correct
+        }))
+      }
+
+      if (importedCards.length === 0 && importedQs.length === 0) {
+        alert('لم يتم العثور على بطاقات أو أسئلة في الكود.')
+        return
+      }
+
+      // إضافة البيانات الجديدة للبيانات الحالية
+      setCards([...cards, ...importedCards])
+      setQuestions([...questions, ...importedQs])
+      setJsonInput('') // تفريغ المربع
+      alert(`تمت الإضافة بنجاح! 🚀\n(${importedCards.length} بطاقة، و ${importedQs.length} سؤال)`)
+
+    } catch (err) {
+      alert('خطأ في تنسيق الكود! تأكدي أنك نسختي الـ JSON بشكل صحيح وبدون أي كلام إضافي.')
+    }
+  }
   return (
     <section className="manage">
       <div style={{ background: '#f0fdf4', padding: '16px', borderRadius: '12px', border: '1px solid #bbf7d0', marginBottom: '24px' }}>
@@ -349,7 +423,41 @@ export default function Manage({ activeSub, cards, setCards, questions, setQuest
         <textarea placeholder="الجواب" value={cardForm.a} onChange={(e) => setCardForm({ ...cardForm, a: e.target.value })} />
         <div className="row" style={{ justifyContent: 'flex-start' }}><button className="primary" type="submit">إضافة</button></div>
       </form>
+      <div style={{ background: '#f8fafc', padding: '24px', borderRadius: '16px', border: '3px solid #cbd5e1', marginBottom: '24px' }}>
+        <h2 style={{ margin: '0 0 16px 0', color: '#334155' }}>📥 استيراد البطاقات من الذكاء الاصطناعي (Claude, ChatGPT, Gemini)</h2>
 
+        {/* مربع التعليمات */}
+        <div style={{ background: '#fffbeb', padding: '16px', borderRadius: '12px', border: '2px dashed #f59e0b', marginBottom: '20px', textAlign: 'start' }}>
+          <h3 style={{ margin: '0 0 10px 0', color: '#d97706', fontSize: '18px' }}>💡 كيف تستخدم هذه الميزة؟</h3>
+          <ol style={{ paddingInlineStart: '20px', margin: '0 0 16px 0', fontWeight: 'bold', color: '#451a03', lineHeight: '1.6' }}>
+            <li>اذهب إلى أي نموذج ذكاء اصطناعي قوي تفضله.</li>
+            <li>ارفع الملف أو الكتاب الذي تريد تلخيصه في الدردشة هناك.</li>
+            <li>انسخ <strong>"الأمر السحري"</strong> بالأسفل وأرسله مع الملف.</li>
+            <li>انسخ الرد (كود JSON) بالكامل والصقه في المربع أدناه ليتم تحويله لبطاقات!</li>
+          </ol>
+
+          <div style={{ background: '#fff', border: '2px solid #fcd34d', borderRadius: '12px', padding: '12px', position: 'relative' }}>
+            <p style={{ margin: '0 0 12px 0', fontSize: '14px', whiteSpace: 'pre-wrap', color: '#333', fontFamily: 'monospace' }}>{promptText}</p>
+            <button onClick={copyPrompt} style={{ background: copied ? '#10b981' : '#f59e0b', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', fontWeight: 'bold', transition: '0.2s' }}>
+              {copied ? '✅ تم النسخ بنجاح!' : '📋 نسخ الأمر السحري'}
+            </button>
+          </div>
+        </div>
+
+        <form onSubmit={handleImportJson}>
+          <textarea
+            placeholder="الصقي كود الـ JSON الناتج هنا..."
+            value={jsonInput}
+            onChange={(e) => setJsonInput(e.target.value)}
+            style={{ minHeight: '150px', borderColor: '#94a3b8', direction: 'ltr', fontFamily: 'monospace', marginBottom: '12px' }}
+          />
+          <div className="row" style={{ justifyContent: 'flex-start' }}>
+            <button className="primary" type="submit" style={{ background: '#475569', borderColor: '#334155' }}>
+              🚀 استيراد البيانات الآن
+            </button>
+          </div>
+        </form>
+      </div>
       <ul className="items">
         {currentCards.map((c, index) => (
           <li key={c.id}>
