@@ -538,42 +538,95 @@ export default function Manage({ activeSub, cards, setCards, questions, setQuest
       </ul>
       {msg && <p className="muted">{msg}</p>}
 
+
+{/* ----- نافذة تعديل البطاقة ----- */}
       {editingCard && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h3>تعديل البطاقة</h3>
-            <form onSubmit={updateCard}>
-              <input placeholder="السؤال" value={editingCard.q} onChange={(e) => setEditingCard({ ...editingCard, q: e.target.value })} />
-              <textarea placeholder="الجواب" value={editingCard.a} onChange={(e) => setEditingCard({ ...editingCard, a: e.target.value })} />
-              <div className="modal-actions">
-                <button type="button" onClick={() => setEditingCard(null)}>إلغاء</button>
-                <button className="primary" type="submit">حفظ التعديل</button>
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.6)', backdropFilter: 'blur(4px)',
+          display: 'flex', justifyContent: 'center', alignItems: 'center',
+          zIndex: 9999
+        }}>
+          <div style={{
+            background: '#fff', padding: '24px', borderRadius: '16px',
+            width: '90%', maxWidth: '400px', /* هذا السطر يمنع الشاشة من التمدد الزائد */
+            boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+            textAlign: 'right'
+          }}>
+            <h3 style={{ margin: '0 0 16px 0', color: '#1e293b' }}>✏️ تعديل البطاقة</h3>
+            <form onSubmit={updateCard} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <input 
+                placeholder="السؤال" 
+                value={editingCard.q} 
+                onChange={(e) => setEditingCard({ ...editingCard, q: e.target.value })} 
+                style={{ padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', width: '100%', boxSizing: 'border-box' }} 
+              />
+              <textarea 
+                placeholder="الجواب" 
+                value={editingCard.a} 
+                onChange={(e) => setEditingCard({ ...editingCard, a: e.target.value })} 
+                style={{ padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', minHeight: '100px', width: '100%', boxSizing: 'border-box', resize: 'vertical' }} 
+              />
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '8px' }}>
+                <button type="button" onClick={() => setEditingCard(null)} style={{ padding: '8px 16px', borderRadius: '8px', background: '#e2e8f0', color: '#475569', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>إلغاء</button>
+                <button type="submit" style={{ padding: '8px 16px', borderRadius: '8px', background: '#3b82f6', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>حفظ التعديل</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
+      {/* ----- نافذة تعديل السؤال ----- */}
       {editingQ && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h3>تعديل السؤال</h3>
-            <form onSubmit={updateQuestion}>
-              <input placeholder="السؤال" value={editingQ.q} onChange={(e) => setEditingQ({ ...editingQ, q: e.target.value })} />
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.6)', backdropFilter: 'blur(4px)',
+          display: 'flex', justifyContent: 'center', alignItems: 'center',
+          zIndex: 9999
+        }}>
+          <div style={{
+            background: '#fff', padding: '24px', borderRadius: '16px',
+            width: '90%', maxWidth: '400px', /* تحديد العرض هنا أيضاً */
+            boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+            textAlign: 'right'
+          }}>
+            <h3 style={{ margin: '0 0 16px 0', color: '#1e293b' }}>✏️ تعديل السؤال</h3>
+            <form onSubmit={updateQuestion} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <input 
+                placeholder="السؤال" 
+                value={editingQ.q} 
+                onChange={(e) => setEditingQ({ ...editingQ, q: e.target.value })} 
+                style={{ padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', width: '100%', boxSizing: 'border-box' }} 
+              />
+              
               {editingQ.options.map((opt, i) => (
-                <label key={i} className="opt-row">
-                  <input type="radio" name="editCorrect" checked={editingQ.correct === i} onChange={() => setEditingQ({ ...editingQ, correct: i })} />
-                  <input placeholder={`الخيار ${i + 1}`} value={opt} onChange={(e) => setEditOption(i, e.target.value)} />
+                <label key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                  <input 
+                    type="radio" 
+                    name="editCorrect" 
+                    checked={editingQ.correct === i} 
+                    onChange={() => setEditingQ({ ...editingQ, correct: i })} 
+                    style={{ margin: 0, cursor: 'pointer', transform: 'scale(1.2)' }} 
+                  />
+                  <input 
+                    placeholder={`الخيار ${i + 1}`} 
+                    value={opt} 
+                    onChange={(e) => setEditOption(i, e.target.value)} 
+                    style={{ padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1', flex: 1 }} 
+                  />
                 </label>
               ))}
-              <div className="modal-actions">
-                <button type="button" onClick={() => setEditingQ(null)}>إلغاء</button>
-                <button className="primary" type="submit">حفظ التعديل</button>
+              
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '8px' }}>
+                <button type="button" onClick={() => setEditingQ(null)} style={{ padding: '8px 16px', borderRadius: '8px', background: '#e2e8f0', color: '#475569', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>إلغاء</button>
+                <button type="submit" style={{ padding: '8px 16px', borderRadius: '8px', background: '#3b82f6', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>حفظ التعديل</button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+
     </section>
   )
 }
